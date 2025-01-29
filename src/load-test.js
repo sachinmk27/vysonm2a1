@@ -4,22 +4,34 @@ import { Rate } from "k6/metrics";
 
 export let errorRate = new Rate("errors");
 
+function generateRandomURL() {
+  const protocols = ["http", "https"];
+  const domains = ["com", "org", "net", "io", "dev"];
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const charLength = chars.length;
+
+  // Helper function to generate random strings
+  function getRandomString(length) {
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars[Math.floor(Math.random() * charLength)];
+    }
+    return result;
+  }
+
+  // Generate random protocol, subdomain, domain, and extension
+  const protocol = protocols[Math.floor(Math.random() * 2)];
+  const subdomain = getRandomString(Math.floor(Math.random() * 8) + 3);
+  const domain = getRandomString(Math.floor(Math.random() * 8) + 3);
+  const domainExtension = domains[Math.floor(Math.random() * domains.length)];
+
+  return `${protocol}://${subdomain}.${domain}.${domainExtension}`;
+}
+
 export let options = {
   stages: [
-    { duration: "10s", target: 200 },
-    { duration: "10s", target: 400 },
-    { duration: "10s", target: 600 },
-    { duration: "10s", target: 800 },
-    { duration: "10s", target: 1000 },
-    { duration: "10s", target: 2000 },
-    { duration: "10s", target: 3000 },
-    { duration: "10s", target: 4000 },
-    { duration: "10s", target: 5000 },
-    { duration: "10s", target: 6000 },
-    { duration: "10s", target: 7000 },
-    { duration: "10s", target: 8000 },
-    { duration: "10s", target: 9000 },
-    { duration: "10s", target: 10000 },
+    { duration: "10s", target: 50 },
+    { duration: "5m", target: 50 },
   ],
   summaryTrendStats: [
     "avg",
@@ -36,7 +48,7 @@ export let options = {
 export default function () {
   let res = http.post(
     "https://vysonm2a1-ugkp.onrender.com/shorten",
-    JSON.stringify({ url: "https://example.com" }),
+    JSON.stringify({ url: generateRandomURL() }),
     {
       headers: { "Content-Type": "application/json" },
     }
