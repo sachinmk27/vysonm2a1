@@ -18,8 +18,15 @@
 3. **Set up environment variables:**
    Create a `.env` file in the root directory by creating a copy from sample.env file.
 
+   ```bash
+   cp .env.sample .env
+   ```
+
 4. **Run database migrations:**
-   `npx drizzle-kit push`
+
+   ```bash
+   npx drizzle-kit push
+   ```
 
 5. **Run the application:**
 
@@ -35,7 +42,7 @@
 1. **Run unit tests:**
 
    ```bash
-   npm test
+   npm run test
    ```
 
 2. **Run load test:**
