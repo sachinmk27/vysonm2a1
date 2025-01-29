@@ -18,13 +18,16 @@
 3. **Set up environment variables:**
    Create a `.env` file in the root directory by creating a copy from sample.env file.
 
-4. **Run the application:**
+4. **Run database migrations:**
+   `npx drizzle-kit push`
+
+5. **Run the application:**
 
    ```bash
    npm start
    ```
 
-5. **Access the API:**
+6. **Access the API:**
    Open your browser or use a tool like Postman to access the API at [http://localhost:3000](http://localhost:3000)
 
 ## Running Tests
