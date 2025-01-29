@@ -34,6 +34,9 @@ export const shorten = async (req, res) => {
 export const redirect = async (req, res) => {
   try {
     const { code } = req.query;
+    if (!code) {
+      return res.status(400).send("Bad Request");
+    }
     const urlRecord = await db
       .select({ originalUrl: urlShortener.originalUrl })
       .from(urlShortener)
