@@ -7,7 +7,10 @@
     "start": "node src/index.js",
     "dev": "NODE_ENV=development nodemon src/index.js",
     "test": "jest --watchAll",
-    "load-test": "k6 run src/load-test.js"
+    "load-test": "k6 run src/load-test.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "keywords": [],
   "author": "",

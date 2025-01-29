@@ -35,7 +35,7 @@ export let options = {
 
 export default function () {
   let res = http.post(
-    "http://localhost:3000/shorten",
+    "https://vysonm2a1-ugkp.onrender.com/shorten",
     JSON.stringify({ url: "https://example.com" }),
     {
       headers: { "Content-Type": "application/json" },

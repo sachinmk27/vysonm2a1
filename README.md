@@ -16,12 +16,7 @@
    ```
 
 3. **Set up environment variables:**
-   Create a `.env` file in the root directory and add the necessary environment variables. For example:
-
-   ```env
-   PORT=3000
-   DB_NAME=sample.db
-   ```
+   Create a `.env` file in the root directory by creating a copy from sample.env file.
 
 4. **Run the application:**
 

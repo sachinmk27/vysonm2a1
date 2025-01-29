@@ -1,11 +1,19 @@
 import 'dotenv/config';
-import { defineConfig } from 'drizzle-kit';
+import { Config, defineConfig } from 'drizzle-kit';
 
-export default defineConfig({
+export default process.env.NODE_ENV !== 'production' ?  defineConfig({
   out: './drizzle',
   schema: './src/db/schema.js',
   dialect: 'sqlite',
   dbCredentials: {
-    url: process.env.DB_FILE_NAME!,
+    url: 'file:sample.db',
   },
-});
+}) :  {
+  schema: "./src/db/schema.js",
+  out: "./drizzle",
+  dialect: "turso",
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  },
+} satisfies Config;
