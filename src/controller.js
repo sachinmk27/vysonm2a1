@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import db from "./drizzle/index.js";
 import { urlShortener } from "./drizzle/schema.js";
 import { isURLValid } from "./utils.js";
@@ -36,11 +36,27 @@ export const redirect = async (req, res) => {
     if (!code) {
       return res.status(400).send("Bad Request");
     }
-    const urlRecord = await db
-      .select({ originalUrl: urlShortener.originalUrl })
-      .from(urlShortener)
-      .where(eq(urlShortener.shortCode, code))
-      .get();
+    const urlRecord = await db.transaction(async (trx) => {
+      const urlRecord = await trx
+        .select({
+          originalUrl: urlShortener.originalUrl,
+          visitCount: urlShortener.visitCount,
+        })
+        .from(urlShortener)
+        .where(eq(urlShortener.shortCode, code))
+        .get();
+      if (!urlRecord) {
+        return null;
+      }
+      await trx
+        .update(urlShortener)
+        .set({
+          visitCount: urlRecord.visitCount + 1,
+          lastAccessedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .where(eq(urlShortener.shortCode, code));
+      return urlRecord;
+    });
     if (!urlRecord) {
       return res.status(404).send("Not Found");
     }

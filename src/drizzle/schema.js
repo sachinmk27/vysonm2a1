@@ -14,9 +14,10 @@ export const urlShortener = sqliteTable(
     originalUrl: text("original_url").notNull(),
     shortCode: text("short_code").notNull(),
     visitCount: integer("visit_count").default(0),
-    createdAt: text("created_at")
+    createdAt: integer("created_at")
       .default(sql`(CURRENT_TIMESTAMP)`)
       .notNull(),
+    lastAccessedAt: integer("last_accessed_at"),
   },
   (table) => {
     return [

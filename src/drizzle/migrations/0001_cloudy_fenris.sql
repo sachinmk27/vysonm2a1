@@ -1,0 +1,1 @@
+ALTER TABLE `url_shortener` ADD `last_accessed_at` text;

@@ -8,6 +8,20 @@
       "when": 1738228508491,
       "tag": "0000_odd_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1738237070528,
+      "tag": "0001_cloudy_fenris",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1738238122014,
+      "tag": "0002_rich_invaders",
+      "breakpoints": true
     }
   ]
 }
