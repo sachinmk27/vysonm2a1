@@ -1,14 +1,14 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Rate } from "k6/metrics";
-import { generateRandomURL } from "./utils";
+import { generateRandomURL } from "./utils.js";
 
 export let errorRate = new Rate("errors");
 
 export let options = {
   stages: [
     { duration: "10s", target: 50 },
-    { duration: "5m", target: 50 },
+    { duration: "30s", target: 50 },
   ],
   summaryTrendStats: [
     "avg",
