@@ -5,8 +5,8 @@
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/url-shortener-api.git
-   cd url-shortener-api
+   git clone https://github.com/sachinmk27/vysonm2a1.git vysonm2a1-sachin
+   cd vysonm2a1-sachin
    ```
 
 2. **Install dependencies:**
@@ -25,7 +25,7 @@
 4. **Run database migrations:**
 
    ```bash
-   npx drizzle-kit push
+   npm run db:migrate
    ```
 
 5. **Run the application:**

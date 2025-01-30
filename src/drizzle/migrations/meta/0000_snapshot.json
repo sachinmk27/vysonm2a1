@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "63599115-d7b1-4078-b83a-e87d01816fd9",
+  "id": "f07cce0e-c60a-47b2-88f7-aa63e197eb58",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "url_shortener": {
@@ -12,7 +12,7 @@
           "type": "integer",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": true
+          "autoincrement": false
         },
         "original_url": {
           "name": "original_url",
@@ -46,12 +46,21 @@
         }
       },
       "indexes": {
-        "url_shortener_short_code_unique": {
-          "name": "url_shortener_short_code_unique",
+        "idx_url_shortener_short_code_original_url": {
+          "name": "idx_url_shortener_short_code_original_url",
           "columns": [
-            "short_code"
+            "short_code",
+            "original_url"
           ],
           "isUnique": true
+        },
+        "idx_url_shortener_original_url_short_code": {
+          "name": "idx_url_shortener_original_url_short_code",
+          "columns": [
+            "original_url",
+            "short_code"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},

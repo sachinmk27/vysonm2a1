@@ -1,32 +1,9 @@
-import http, { batch } from "k6/http";
+import http from "k6/http";
 import { check, sleep } from "k6";
 import { Rate } from "k6/metrics";
+import { generateRandomURL } from "./utils";
 
 export let errorRate = new Rate("errors");
-
-function generateRandomURL() {
-  const protocols = ["http", "https"];
-  const domains = ["com", "org", "net", "io", "dev"];
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const charLength = chars.length;
-
-  // Helper function to generate random strings
-  function getRandomString(length) {
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += chars[Math.floor(Math.random() * charLength)];
-    }
-    return result;
-  }
-
-  // Generate random protocol, subdomain, domain, and extension
-  const protocol = protocols[Math.floor(Math.random() * 2)];
-  const subdomain = getRandomString(Math.floor(Math.random() * 8) + 3);
-  const domain = getRandomString(Math.floor(Math.random() * 8) + 3);
-  const domainExtension = domains[Math.floor(Math.random() * domains.length)];
-
-  return `${protocol}://${subdomain}.${domain}.${domainExtension}`;
-}
 
 export let options = {
   stages: [

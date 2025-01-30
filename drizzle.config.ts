@@ -1,19 +1,24 @@
-import 'dotenv/config';
-import { Config, defineConfig } from 'drizzle-kit';
+import "dotenv/config";
+import { defineConfig } from "drizzle-kit";
 
-export default process.env.NODE_ENV !== 'production' ?  defineConfig({
-  out: './drizzle',
-  schema: './src/db/schema.js',
-  dialect: 'sqlite',
-  dbCredentials: {
-    url: 'file:sample.db',
-  },
-}) :  {
-  schema: "./src/db/schema.js",
-  out: "./drizzle",
-  dialect: "turso",
+export default defineConfig({
+  out: "./src/drizzle/migrations",
+  schema: "./src/drizzle/schema.js",
+  dialect: "sqlite",
   dbCredentials: {
     url: process.env.DATABASE_URL!,
-    authToken: process.env.TURSO_AUTH_TOKEN,
   },
-} satisfies Config;
+  verbose: true,
+  strict: true,
+
+  // Overrides for production configuration
+  ...(process.env.NODE_ENV === "production"
+    ? {
+        dialect: "turso",
+        dbCredentials: {
+          url: process.env.DATABASE_URL!,
+          authToken: process.env.TURSO_AUTH_TOKEN,
+        },
+      }
+    : {}),
+});

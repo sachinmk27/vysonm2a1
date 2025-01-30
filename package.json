@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "NODE_ENV=development nodemon src/index.js",
-    "test": "jest --watchAll",
+    "dev": "nodemon src/index.js",
+    "test": "jest --watchAll --coverage",
     "load-test": "k6 run src/load-test.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

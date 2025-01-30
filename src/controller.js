@@ -1,8 +1,7 @@
 import { faker } from "@faker-js/faker";
-import db from "./db/index.js";
-import * as Query from "./queries.js";
-import { urlShortener } from "./db/schema.js";
 import { eq } from "drizzle-orm";
+import db from "./drizzle/index.js";
+import { urlShortener } from "./drizzle/schema.js";
 import { isURLValid } from "./utils.js";
 
 export const shorten = async (req, res) => {
