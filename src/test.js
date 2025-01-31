@@ -18,13 +18,13 @@ describe("POST /shorten", () => {
         expect(res.status).toBe(200);
       });
   });
-  it("should return 200 OK for duplicate URL", () => {
+  it("should return 200 OK with different short code for duplicate URL", () => {
     return request(app)
       .post("/shorten")
       .send({ url: SAMPLE_URL_A })
       .then((res) => {
-        shortCode = res.body.shortCode;
         expect(res.status).toBe(200);
+        expect(res.body.shortCode).not.toBe(shortCode);
       });
   });
   it("should return 400 Bad Request for invalid URL format", () => {

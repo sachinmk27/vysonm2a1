@@ -10,17 +10,6 @@ export const shorten = async (req, res) => {
     if (!url || !isURLValid(url)) {
       return res.status(400).send("Bad Request");
     }
-    const duplicateURL = await db
-      .select({
-        originalUrl: urlShortener.originalUrl,
-        shortCode: urlShortener.shortCode,
-      })
-      .from(urlShortener)
-      .where(eq(urlShortener.originalUrl, url))
-      .get();
-    if (duplicateURL) {
-      return res.json({ shortCode: duplicateURL.shortCode });
-    }
     const shortCode = faker.string.alpha(10);
     await db.insert(urlShortener).values({ originalUrl: url, shortCode });
     res.json({ shortCode });

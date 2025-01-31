@@ -21,14 +21,11 @@ export const urlShortener = sqliteTable(
   },
   (table) => {
     return [
-      uniqueIndex("idx_url_shortener_short_code_original_url").on(
+      index("idx_url_shortener_short_code_original_url").on(
         table.shortCode,
         table.originalUrl
       ),
-      index("idx_url_shortener_original_url_short_code").on(
-        table.originalUrl,
-        table.shortCode
-      ),
+      index("idx_url_shortener_original_url").on(table.originalUrl),
     ];
   }
 );
