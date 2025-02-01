@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `url_shortener_short_code_unique` ON `url_shortener` (`short_code`);

@@ -6,7 +6,7 @@ export const urlTable = sqliteTable(
   {
     id: integer().primaryKey(),
     originalUrl: text("original_url").notNull(),
-    shortCode: text("short_code").notNull(),
+    shortCode: text("short_code").unique().notNull(),
     visitCount: integer("visit_count").default(0),
     createdAt: integer("created_at")
       .default(sql`(CURRENT_TIMESTAMP)`)
