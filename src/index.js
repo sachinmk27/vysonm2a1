@@ -11,6 +11,7 @@ app.get("/ping", (req, res) => {
 });
 
 app.post("/shorten", verifyApiKey, controllers.shorten);
+app.post("/batch-shorten", verifyApiKey, controllers.batchShorten);
 app.get("/redirect", controllers.redirect);
 app.delete("/shorten/:code?", verifyApiKey, controllers.deleteCode);
 

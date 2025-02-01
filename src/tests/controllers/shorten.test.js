@@ -59,6 +59,15 @@ describe("POST /shorten", () => {
         expect(res.status).toBe(400);
       });
   });
+  it("should return 400 Bad Request for missing URL", () => {
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, code: "" })
+      .then((res) => {
+        expect(res.status).toBe(400);
+      });
+  });
   it("should return 401 Unauthorized for missing API key", () => {
     return request(app)
       .post("/shorten")
@@ -198,6 +207,76 @@ describe("DELETE /shorten/:code", () => {
       .then((res) => {
         expect(res.status).toBe(500);
         db.delete = originalDelete;
+      });
+  });
+});
+
+describe("POST /batch-shorten", () => {
+  it("should return 200 OK for valid input", () => {
+    return request(app)
+      .post("/batch-shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ urls: [{ url: SAMPLE_URL_A }, { url: SAMPLE_URL_B }] })
+      .then((res) => {
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(2);
+      });
+  });
+
+  it("should return 400 Bad Request for missing URL", () => {
+    return request(app)
+      .post("/batch-shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({})
+      .then((res) => {
+        expect(res.status).toBe(400);
+      });
+  });
+
+  it("should return 401 Unauthorized for missing API key", () => {
+    return request(app)
+      .post("/batch-shorten")
+      .send({ urls: [{ url: SAMPLE_URL_A }, { url: SAMPLE_URL_B }] })
+      .then((res) => {
+        expect(res.status).toBe(401);
+      });
+  });
+
+  it("should partially process if some URLs are invalid and return success/errors accordingly", () => {
+    const reqBody = {
+      urls: [
+        { url: SAMPLE_URL_A, code: "sample_url_a_code" },
+        { url: "invalid url" },
+        { url: SAMPLE_URL_B, code: "sample_url_b_code" },
+      ],
+    };
+    const responses = [
+      {
+        status: "success",
+        value: {
+          shortCode: "sample_url_a_code",
+          expiryDate: null,
+          userId: 1,
+        },
+      },
+      { status: "error", value: { name: "BadRequestError", status: 400 } },
+      {
+        status: "success",
+        value: {
+          shortCode: "sample_url_b_code",
+          expiryDate: null,
+          userId: 1,
+        },
+      },
+    ];
+    return request(app)
+      .post("/batch-shorten")
+      .set("X-API-KEY", "apiKey")
+      .send(reqBody)
+      .then((res) => {
+        expect(res.status).toBe(200);
+        expect(res.body.length).toBe(3);
+        expect(res.body).toEqual(responses);
       });
   });
 });
