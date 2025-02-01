@@ -78,6 +78,35 @@ describe("POST /shorten", () => {
         expect(res.body.expiryDate).toBe(expiryDate);
       });
   });
+  it("should return 200 OK if custom code is provided", () => {
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, code: "custom-code" })
+      .then((res) => {
+        expect(res.status).toBe(200);
+        expect(res.body.shortCode).toBe("custom-code");
+      });
+  });
+  it("should return 409 Conflict if duplicate custom code is provided", () => {
+    return db
+      .insert(urlTable)
+      .values({
+        originalUrl: SAMPLE_URL_A,
+        shortCode: "custom-code",
+        userId: 1,
+      })
+      .onConflictDoNothing()
+      .then(() => {
+        return request(app)
+          .post("/shorten")
+          .set("X-API-KEY", "apiKey")
+          .send({ url: SAMPLE_URL_A, code: "custom-code" })
+          .then((res) => {
+            expect(res.status).toBe(409);
+          });
+      });
+  });
 });
 
 describe("DELETE /shorten/:code", () => {

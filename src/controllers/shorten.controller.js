@@ -6,12 +6,12 @@ import { isURLValid } from "../utils.js";
 
 export const shorten = async (req, res) => {
   try {
-    const { url, expiryDate } = req.body;
+    const { url, expiryDate, code } = req.body;
     const { userRecord } = req;
-    if (!url || !isURLValid(url)) {
+    if (!url || !isURLValid(url) || code === "") {
       return res.status(400).send("Bad Request");
     }
-    const shortCode = faker.string.alpha(10);
+    const shortCode = code || faker.string.alpha(10);
     const urlRecord = await db
       .insert(urlTable)
       .values({
@@ -26,7 +26,10 @@ export const shorten = async (req, res) => {
       expiryDate: urlRecord[0].expiryDate,
     });
   } catch (err) {
-    console.error(err);
+    console.log(err);
+    if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      return res.status(409).send("Code already exists");
+    }
     res.status(500).send("Internal Server Error");
   }
 };
@@ -50,9 +53,6 @@ export const deleteCode = async (req, res) => {
       .get();
     if (!urlRecord) {
       return res.status(404).send("Not Found");
-    }
-    if (urlRecord.apiKey !== req.headers["x-api-key"]) {
-      return res.status(403).send("Forbidden");
     }
     await db.delete(urlTable).where(eq(urlTable.shortCode, code));
     res.status(204).send();
