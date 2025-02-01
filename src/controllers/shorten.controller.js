@@ -26,7 +26,6 @@ export const shorten = async (req, res) => {
       expiryDate: urlRecord[0].expiryDate,
     });
   } catch (err) {
-    console.log(err);
     if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
       return res.status(409).send("Code already exists");
     }
@@ -57,7 +56,6 @@ export const deleteCode = async (req, res) => {
     await db.delete(urlTable).where(eq(urlTable.shortCode, code));
     res.status(204).send();
   } catch (err) {
-    console.error(err);
     res.status(500).send("Internal Server Error");
   }
 };

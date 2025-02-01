@@ -107,6 +107,21 @@ describe("POST /shorten", () => {
           });
       });
   });
+  it("should return 500 if database error occurs", () => {
+    const originalInsert = db.insert;
+    db.insert = jest.fn().mockImplementation(() => {
+      throw new Error("Database error");
+    });
+
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A })
+      .then((res) => {
+        expect(res.status).toBe(500);
+        db.insert = originalInsert;
+      });
+  });
 });
 
 describe("DELETE /shorten/:code", () => {
@@ -168,6 +183,21 @@ describe("DELETE /shorten/:code", () => {
       .set("X-API-KEY", "")
       .then((res) => {
         expect(res.status).toBe(401);
+      });
+  });
+
+  it("should return 500 if database error occurs", () => {
+    const originalDelete = db.delete;
+    db.delete = jest.fn().mockImplementation(() => {
+      throw new Error("Database error");
+    });
+
+    return request(app)
+      .delete(`/shorten/${shortCode}`)
+      .set("X-API-KEY", "apiKey")
+      .then((res) => {
+        expect(res.status).toBe(500);
+        db.delete = originalDelete;
       });
   });
 });

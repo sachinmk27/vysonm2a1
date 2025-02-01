@@ -95,7 +95,6 @@ describe("GET /redirect", () => {
           });
       });
   });
-
   it("should return 302 if the URL has not expired", () => {
     return request(app)
       .post("/shorten")
@@ -110,6 +109,19 @@ describe("GET /redirect", () => {
           .then((res) => {
             expect(res.status).toBe(302);
           });
+      });
+  });
+  it("should return 500 if there is a database error", () => {
+    jest
+      .spyOn(db, "transaction")
+      .mockRejectedValueOnce(new Error("Database error"));
+
+    return request(app)
+      .get("/redirect")
+      .query({ code: shortCode })
+      .then((res) => {
+        expect(res.status).toBe(500);
+        jest.restoreAllMocks();
       });
   });
 });
