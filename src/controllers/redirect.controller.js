@@ -13,11 +13,15 @@ export const redirect = async (req, res) => {
         .select({
           originalUrl: urlTable.originalUrl,
           visitCount: urlTable.visitCount,
+          expiryDate: urlTable.expiryDate,
         })
         .from(urlTable)
         .where(eq(urlTable.shortCode, code))
         .get();
-      if (!urlRecord) {
+      if (
+        !urlRecord ||
+        (urlRecord.expiryDate && Date.now() > urlRecord.expiryDate)
+      ) {
         return null;
       }
       await trx

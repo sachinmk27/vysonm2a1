@@ -59,6 +59,25 @@ describe("POST /shorten", () => {
         expect(res.status).toBe(400);
       });
   });
+  it("should return 401 Unauthorized for missing API key", () => {
+    return request(app)
+      .post("/shorten")
+      .send({ url: SAMPLE_URL_A })
+      .then((res) => {
+        expect(res.status).toBe(401);
+      });
+  });
+  it("should return 200 OK with expiry date", () => {
+    const expiryDate = Date.now() + 1000;
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, expiryDate })
+      .then((res) => {
+        expect(res.status).toBe(200);
+        expect(res.body.expiryDate).toBe(expiryDate);
+      });
+  });
 });
 
 describe("DELETE /shorten/:code", () => {

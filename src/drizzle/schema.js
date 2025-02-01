@@ -12,6 +12,7 @@ export const urlTable = sqliteTable(
       .default(sql`(CURRENT_TIMESTAMP)`)
       .notNull(),
     lastAccessedAt: integer("last_accessed_at"),
+    expiryDate: integer("expiry_date"),
     userId: integer("user_id")
       .references(() => userTable.id, { onDelete: "restrict" })
       .notNull(),

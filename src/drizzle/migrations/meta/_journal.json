@@ -36,6 +36,13 @@
       "when": 1738304653285,
       "tag": "0004_lucky_jack_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1738402848807,
+      "tag": "0005_tearful_bullseye",
+      "breakpoints": true
     }
   ]
 }

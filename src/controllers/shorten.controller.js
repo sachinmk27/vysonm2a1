@@ -6,16 +6,25 @@ import { isURLValid } from "../utils.js";
 
 export const shorten = async (req, res) => {
   try {
-    const { url } = req.body;
+    const { url, expiryDate } = req.body;
     const { userRecord } = req;
     if (!url || !isURLValid(url)) {
       return res.status(400).send("Bad Request");
     }
     const shortCode = faker.string.alpha(10);
-    await db
+    const urlRecord = await db
       .insert(urlTable)
-      .values({ originalUrl: url, shortCode, userId: userRecord.id });
-    res.json({ shortCode });
+      .values({
+        originalUrl: url,
+        shortCode,
+        userId: userRecord.id,
+        expiryDate,
+      })
+      .returning();
+    res.json({
+      shortCode: urlRecord[0].shortCode,
+      expiryDate: urlRecord[0].expiryDate,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error");

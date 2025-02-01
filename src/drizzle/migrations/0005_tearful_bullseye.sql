@@ -1,0 +1,1 @@
+ALTER TABLE `url_shortener` ADD `expiry_date` integer;

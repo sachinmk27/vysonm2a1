@@ -78,8 +78,38 @@ describe("GET /redirect", () => {
       .where(eq(urlTable.shortCode, shortCode))
       .get();
     expect(updatedRecord.visitCount).toBe(initialRecord.visitCount + 1);
-    // expect(new Date(updatedRecord.lastAccessedAt).getTime()).toBeGreaterThan(
-    //   new Date(initialRecord.lastAccessedAt).getTime()
-    // );
+  });
+  it("should return 404 if the URL has expired", () => {
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, expiryDate: Date.now() - 1000 })
+      .then((res) => {
+        const shortCode = res.body.shortCode;
+        expect(res.status).toBe(200);
+        return request(app)
+          .get("/redirect")
+          .query({ code: shortCode })
+          .then((res) => {
+            expect(res.status).toBe(404);
+          });
+      });
+  });
+
+  it("should return 302 if the URL has not expired", () => {
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, expiryDate: Date.now() + 60 * 60 * 1000 })
+      .then((res) => {
+        const shortCode = res.body.shortCode;
+        expect(res.status).toBe(200);
+        return request(app)
+          .get("/redirect")
+          .query({ code: shortCode })
+          .then((res) => {
+            expect(res.status).toBe(302);
+          });
+      });
   });
 });
