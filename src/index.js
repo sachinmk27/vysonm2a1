@@ -1,7 +1,7 @@
 import express from "express";
-import "dotenv/config";
-import "./drizzle/index.js";
-import * as controller from "./controller.js";
+
+import controllers from "./controllers/index.js";
+import verifyApiKey from "./middlewares/verifyApiKey.js";
 
 const app = express();
 app.use(express.json());
@@ -10,9 +10,9 @@ app.get("/ping", (req, res) => {
   res.status(200).send("pong");
 });
 
-app.post("/shorten", controller.shorten);
-app.get("/redirect", controller.redirect);
-app.delete("/shorten/:code?", controller.deleteCode);
+app.post("/shorten", verifyApiKey, controllers.shorten);
+app.get("/redirect", controllers.redirect);
+app.delete("/shorten/:code?", verifyApiKey, controllers.deleteCode);
 
 if (
   process.env.NODE_ENV === "development" ||

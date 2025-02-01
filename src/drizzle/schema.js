@@ -1,13 +1,7 @@
-import {
-  sqliteTable,
-  integer,
-  text,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, text, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-export const urlShortener = sqliteTable(
+export const urlTable = sqliteTable(
   "url_shortener",
   {
     id: integer().primaryKey(),
@@ -18,6 +12,9 @@ export const urlShortener = sqliteTable(
       .default(sql`(CURRENT_TIMESTAMP)`)
       .notNull(),
     lastAccessedAt: integer("last_accessed_at"),
+    userId: integer("user_id")
+      .references(() => userTable.id, { onDelete: "restrict" })
+      .notNull(),
   },
   (table) => {
     return [
@@ -29,3 +26,13 @@ export const urlShortener = sqliteTable(
     ];
   }
 );
+
+export const userTable = sqliteTable("user", {
+  id: integer().primaryKey(),
+  email: text("email").unique().notNull(),
+  name: text("name"),
+  apiKey: text("api_key").unique().notNull(),
+  createdAt: integer("created_at")
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull(),
+});

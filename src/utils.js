@@ -7,7 +7,7 @@ export const isURLValid = (url) => {
   }
 };
 
-export const getRandomString = (length) => {
+export const getRandomString = (length = 10) => {
   let result = "";
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   const charLength = chars.length;
