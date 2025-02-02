@@ -26,6 +26,10 @@ afterAll(async () => {
   await db.delete(userTable).where(eq(userTable.id, 1));
 });
 
+afterEach(async () => {
+  await db.delete(urlTable);
+});
+
 describe("POST /shorten", () => {
   let shortCode;
   it("should return 200 OK", () => {
@@ -38,15 +42,17 @@ describe("POST /shorten", () => {
         expect(res.status).toBe(200);
       });
   });
-  it("should return 200 OK with different short code for duplicate URL", () => {
-    return request(app)
+  it("should return 200 OK with different short code for duplicate URL", async () => {
+    await request(app)
       .post("/shorten")
       .set("X-API-KEY", "apiKey")
-      .send({ url: SAMPLE_URL_A })
-      .then((res) => {
-        expect(res.status).toBe(200);
-        expect(res.body.shortCode).not.toBe(shortCode);
-      });
+      .send({ url: SAMPLE_URL_A });
+    const res = await request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A });
+    expect(res.status).toBe(200);
+    expect(res.body.shortCode).not.toBe(shortCode);
   });
   it("should return 400 Bad Request for invalid URL format", () => {
     return request(app)
@@ -102,6 +108,21 @@ describe("POST /shorten", () => {
       .then((res) => {
         expect(res.status).toBe(200);
         expect(res.body.shortCode).toBe("custom-code");
+      });
+  });
+  it("should return 200 OK if access password is provided", () => {
+    const expiryDate = Date.now() + 1000;
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({
+        url: SAMPLE_URL_A,
+        accessPassword: "password",
+        expiryDate,
+      })
+      .then((res) => {
+        expect(res.status).toBe(200);
+        expect(res.body.expiryDate).toBe(expiryDate);
       });
   });
   it("should return 409 Conflict if duplicate custom code is provided", () => {
@@ -323,7 +344,7 @@ describe("PATCH /shorten/:code", () => {
       });
   });
 
-  it("should return 400 Bad Request if no expiry date is provided", () => {
+  it("should return 400 Bad Request if input is empty", () => {
     return request(app)
       .patch(`/shorten/${shortCode}`)
       .set("X-API-KEY", "apiKey")
@@ -365,6 +386,28 @@ describe("PATCH /shorten/:code", () => {
       .then((res) => {
         expect(res.status).toBe(500);
         db.update = originalUpdate;
+      });
+  });
+
+  it("should return 200 OK for valid input with access password and expiry date", () => {
+    const expiryDate = Date.now() + 1000;
+    return request(app)
+      .patch(`/shorten/${shortCode}`)
+      .set("X-API-KEY", "apiKey")
+      .send({ accessPassword: "password", expiryDate })
+      .then((res) => {
+        expect(res.status).toBe(200);
+        expect(res.body.expiryDate).toBe(expiryDate);
+      });
+  });
+
+  it("should return 200 OK for valid input with only access password", () => {
+    return request(app)
+      .patch(`/shorten/${shortCode}`)
+      .set("X-API-KEY", "apiKey")
+      .send({ accessPassword: "password" })
+      .then((res) => {
+        expect(res.status).toBe(200);
       });
   });
 });

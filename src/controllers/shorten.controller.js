@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { and, eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
 import db from "../drizzle/index.js";
 import { urlTable, userTable } from "../drizzle/schema.js";
 import {
@@ -10,7 +11,13 @@ import {
   NotFoundError,
 } from "../utils.js";
 
-async function insertUrlRecord(url, code, userId, expiryDate) {
+async function insertUrlRecord({
+  url,
+  code,
+  userId,
+  expiryDate = null,
+  password,
+}) {
   try {
     if (!url || !isURLValid(url)) {
       throw new BadRequestError("Invalid URL");
@@ -19,6 +26,9 @@ async function insertUrlRecord(url, code, userId, expiryDate) {
       throw new BadRequestError("Invalid code");
     }
     const shortCode = code || faker.string.alpha(10);
+    const accessPassword = password
+      ? await bcrypt.hash(password, 10)
+      : undefined;
     const urlRecord = await db
       .insert(urlTable)
       .values({
@@ -26,6 +36,7 @@ async function insertUrlRecord(url, code, userId, expiryDate) {
         shortCode,
         userId,
         expiryDate,
+        accessPassword,
       })
       .returning({
         shortCode: urlTable.shortCode,
@@ -46,14 +57,15 @@ async function insertUrlRecord(url, code, userId, expiryDate) {
 
 export const shorten = async (req, res) => {
   try {
-    const { url, expiryDate, code } = req.body;
+    const { url, expiryDate, code, accessPassword } = req.body;
     const { userRecord } = req;
-    const urlRecord = await insertUrlRecord(
+    const urlRecord = await insertUrlRecord({
       url,
       code,
-      userRecord.id,
-      expiryDate
-    );
+      userId: userRecord.id,
+      expiryDate,
+      password: accessPassword,
+    });
     res.json(urlRecord);
   } catch (err) {
     res.status(err.status).send(err.message);
@@ -86,8 +98,14 @@ export const batchShorten = async (req, res) => {
       throw new BadRequestError("Invalid request");
     }
     const urlRecords = await Promise.allSettled(
-      urls.map(({ url, code, expiryDate }) =>
-        insertUrlRecord(url, code, userRecord.id, expiryDate)
+      urls.map(({ url, code, expiryDate, accessPassword }) =>
+        insertUrlRecord({
+          url,
+          code,
+          userId: userRecord.id,
+          expiryDate,
+          password: accessPassword,
+        })
       )
     );
     res.json(
@@ -122,22 +140,34 @@ async function getUrlRecord(code, userId) {
 export const editCode = async (req, res) => {
   try {
     const { code } = req.params;
-    const { expiryDate } = req.body;
+    const { expiryDate, accessPassword } = req.body;
     const { userRecord } = req;
-    if (!expiryDate || typeof expiryDate !== "number") {
+    if (
+      (!expiryDate && !accessPassword) ||
+      (expiryDate && typeof expiryDate !== "number")
+    ) {
       throw new BadRequestError("Invalid request");
     }
     const urlRecord = await getUrlRecord(code, userRecord.id);
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
+    const hashedPassword = accessPassword
+      ? await bcrypt.hash(accessPassword, 10)
+      : undefined;
+    const updatedExpiryDate = expiryDate ? expiryDate : urlRecord.expiryDate;
     const updatedUrlRecord = await db
       .update(urlTable)
       .set({
-        expiryDate,
+        expiryDate: updatedExpiryDate,
+        accessPassword: hashedPassword,
       })
       .where(eq(urlTable.id, urlRecord.id))
-      .returning({ expiryDate: urlTable.expiryDate, id: urlTable.id });
+      .returning({
+        expiryDate: urlTable.expiryDate,
+        id: urlTable.id,
+        accessPassword: urlTable.accessPassword,
+      });
     return res.json(updatedUrlRecord[0]);
   } catch (err) {
     if (err instanceof NotFoundError || err instanceof BadRequestError) {

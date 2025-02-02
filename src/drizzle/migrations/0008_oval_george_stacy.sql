@@ -1,0 +1,1 @@
+ALTER TABLE `url_shortener` ADD `access_password` text;

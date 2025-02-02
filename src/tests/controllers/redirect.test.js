@@ -131,4 +131,50 @@ describe("GET /redirect", () => {
         jest.restoreAllMocks();
       });
   });
+  it("should return 302 Found if correct access password is provided", async () => {
+    const accessPassword = "password";
+    const res = await request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, accessPassword });
+    const shortCode = res.body.shortCode;
+    expect(res.status).toBe(200);
+
+    return request(app)
+      .get("/redirect")
+      .query({ code: shortCode, accessPassword })
+      .then((res) => {
+        const redirectUrl = res.headers.location;
+        expect(res.status).toBe(302);
+        expect(redirectUrl).toBe(SAMPLE_URL_A);
+      });
+  });
+  it("should return 400 for passing password when not set", async () => {
+    const res = await request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A });
+    const shortCode = res.body.shortCode;
+    expect(res.status).toBe(200);
+
+    const resEmptyPassword = await request(app)
+      .get("/redirect")
+      .query({ code: shortCode, accessPassword: "password" });
+    expect(resEmptyPassword.status).toBe(400);
+  });
+
+  it("should return 401 for invalid password", async () => {
+    const accessPassword = "password";
+    const res = await request(app)
+      .post("/shorten")
+      .set("X-API-KEY", "apiKey")
+      .send({ url: SAMPLE_URL_A, accessPassword: accessPassword });
+    const shortCode = res.body.shortCode;
+    expect(res.status).toBe(200);
+
+    const resEmptyPassword = await request(app)
+      .get("/redirect")
+      .query({ code: shortCode, accessPassword: "invalid_password" });
+    expect(resEmptyPassword.status).toBe(401);
+  });
 });
