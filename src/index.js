@@ -3,7 +3,7 @@ import db from "./drizzle/index.js";
 import controllers from "./controllers/index.js";
 import verifyApiKey from "./middlewares/verifyApiKey.js";
 import verifyTier from "./middlewares/verifyTier.js";
-import { roleTable } from "./drizzle/schema.js";
+import { tierTable } from "./drizzle/schema.js";
 
 const app = express();
 app.use(express.json());
@@ -21,10 +21,11 @@ app.post(
 );
 app.get("/redirect", controllers.redirect);
 app.delete("/shorten/:code?", verifyApiKey, controllers.deleteCode);
+app.patch("/shorten/:code", verifyApiKey, controllers.editCode);
 
 async function initializeDatabase() {
   await db
-    .insert(roleTable)
+    .insert(tierTable)
     .values([
       { name: "hobby", id: 1 },
       { name: "enterprise", id: 2 },

@@ -64,19 +64,7 @@ export const deleteCode = async (req, res) => {
   try {
     const { code } = req.params;
     const { userRecord } = req;
-    if (!code) {
-      throw new BadRequestError("Invalid code");
-    }
-    const urlRecord = await db
-      .select({
-        apiKey: userTable.apiKey,
-      })
-      .from(urlTable)
-      .innerJoin(userTable, eq(urlTable.userId, userTable.id))
-      .where(
-        and(eq(urlTable.shortCode, code), eq(urlTable.userId, userRecord.id))
-      )
-      .get();
+    const urlRecord = await getUrlRecord(code, userRecord.id);
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
@@ -110,6 +98,49 @@ export const batchShorten = async (req, res) => {
     );
   } catch (err) {
     if (err instanceof BadRequestError) {
+      return res.status(err.status).send(err.message);
+    }
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+async function getUrlRecord(code, userId) {
+  if (!code) {
+    throw new BadRequestError("Invalid code");
+  }
+  const urlRecord = await db
+    .select({
+      id: urlTable.id,
+    })
+    .from(urlTable)
+    .innerJoin(userTable, eq(urlTable.userId, userTable.id))
+    .where(and(eq(urlTable.shortCode, code), eq(urlTable.userId, userId)))
+    .get();
+  return urlRecord;
+}
+
+export const editCode = async (req, res) => {
+  try {
+    const { code } = req.params;
+    const { expiryDate } = req.body;
+    const { userRecord } = req;
+    if (!expiryDate || typeof expiryDate !== "number") {
+      throw new BadRequestError("Invalid request");
+    }
+    const urlRecord = await getUrlRecord(code, userRecord.id);
+    if (!urlRecord) {
+      throw new NotFoundError("Not Found");
+    }
+    const updatedUrlRecord = await db
+      .update(urlTable)
+      .set({
+        expiryDate,
+      })
+      .where(eq(urlTable.id, urlRecord.id))
+      .returning({ expiryDate: urlTable.expiryDate, id: urlTable.id });
+    return res.json(updatedUrlRecord[0]);
+  } catch (err) {
+    if (err instanceof NotFoundError || err instanceof BadRequestError) {
       return res.status(err.status).send(err.message);
     }
     res.status(500).send("Internal Server Error");

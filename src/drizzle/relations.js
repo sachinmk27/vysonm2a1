@@ -13,14 +13,14 @@ export const urlRelations = relations(urlTable, ({ one }) => {
 export const userRelations = relations(userTable, ({ many }) => {
   return {
     urls: many(urlTable),
-    role: one(tierTable, {
+    tier: one(tierTable, {
       fields: [userTable.tierId],
       references: [tierTable.id],
     }),
   };
 });
 
-export const roleRelations = relations(tierTable, ({ many }) => {
+export const tierRelations = relations(tierTable, ({ many }) => {
   return {
     users: many(userTable),
   };
