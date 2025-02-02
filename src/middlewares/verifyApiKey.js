@@ -19,9 +19,6 @@ export default async function verifyApiKey(req, res, next) {
   if (!userRecord) {
     return res.status(401).send("Unauthorized");
   }
-  if (userRecord.apiKey !== req.headers["x-api-key"]) {
-    return res.status(403).send("Forbidden");
-  }
   req.userRecord = userRecord;
   next();
 }

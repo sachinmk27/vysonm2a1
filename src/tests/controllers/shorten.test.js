@@ -22,8 +22,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.delete(urlTable).where(eq(urlTable.userId, 1));
-  await db.delete(userTable).where(eq(userTable.id, 1));
+  await db.delete(userTable);
 });
 
 afterEach(async () => {
@@ -305,6 +304,25 @@ describe("POST /batch-shorten", () => {
         expect(res.status).toBe(200);
         expect(res.body.length).toBe(3);
         expect(res.body).toEqual(responses);
+      });
+  });
+
+  it("should return 403 if tier is not enterprise", async () => {
+    await db
+      .insert(userTable)
+      .values({
+        email: "anotherDummy@example.com",
+        apiKey: "dummyApiKey",
+        id: 3,
+        tierId: 1,
+      })
+      .onConflictDoNothing();
+    return request(app)
+      .post("/batch-shorten")
+      .set("X-API-KEY", "dummyApiKey")
+      .send({ urls: [{ url: SAMPLE_URL_A }, { url: SAMPLE_URL_B }] })
+      .then((res) => {
+        expect(res.status).toBe(403);
       });
   });
 });

@@ -46,27 +46,6 @@ describe("verifyApiKey middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("should return 403 if api keys don't match", async () => {
-    req.headers["x-api-key"] = "test-key";
-    db.select.mockReturnValue({
-      from: jest.fn().mockReturnValue({
-        innerJoin: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue({
-              apiKey: "different-key",
-              id: 1,
-            }),
-          }),
-        }),
-      }),
-    });
-
-    await verifyApiKey(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.send).toHaveBeenCalledWith("Forbidden");
-    expect(next).not.toHaveBeenCalled();
-  });
-
   it("should call next() and set userRecord if api key is valid", async () => {
     const validApiKey = "valid-key";
     const userRecord = { apiKey: validApiKey, id: 1 };

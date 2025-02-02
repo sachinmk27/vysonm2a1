@@ -22,6 +22,12 @@ app.post(
 app.get("/redirect", controllers.redirect);
 app.delete("/shorten/:code?", verifyApiKey, controllers.deleteCode);
 app.patch("/shorten/:code", verifyApiKey, controllers.editCode);
+app.get(
+  "/shorten",
+  verifyApiKey,
+  verifyTier("enterprise"),
+  controllers.getCodes
+);
 
 async function initializeDatabase() {
   await db

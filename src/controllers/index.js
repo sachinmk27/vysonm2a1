@@ -3,6 +3,7 @@ import {
   deleteCode,
   batchShorten,
   editCode,
+  getCodes,
 } from "./shorten.controller.js";
 import { redirect } from "./redirect.controller.js";
 
@@ -12,4 +13,5 @@ export default {
   editCode,
   batchShorten,
   redirect,
+  getCodes,
 };

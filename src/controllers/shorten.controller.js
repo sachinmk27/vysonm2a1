@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import db from "../drizzle/index.js";
 import { urlTable, userTable } from "../drizzle/schema.js";
@@ -173,6 +173,28 @@ export const editCode = async (req, res) => {
     if (err instanceof NotFoundError || err instanceof BadRequestError) {
       return res.status(err.status).send(err.message);
     }
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+export const getCodes = async (req, res) => {
+  try {
+    const { page = 1, pageSize = 10 } = req.query;
+    const { userRecord } = req;
+    const urlRecords = await db
+      .select({
+        shortCode: urlTable.shortCode,
+        originalUrl: urlTable.originalUrl,
+        expiryDate: urlTable.expiryDate,
+      })
+      .from(urlTable)
+      .where(eq(urlTable.userId, userRecord.id))
+      .orderBy(asc(urlTable.id))
+      .offset((page - 1) * pageSize)
+      .limit(pageSize);
+    res.json(urlRecords);
+  } catch (err) {
+    console.log(err);
     res.status(500).send("Internal Server Error");
   }
 };
