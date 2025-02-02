@@ -36,4 +36,15 @@ export const userTable = sqliteTable("user", {
   createdAt: integer("created_at")
     .default(sql`(CURRENT_TIMESTAMP)`)
     .notNull(),
+  tierId: integer("tier_id")
+    .references(() => tierTable.id, {
+      onUpdate: "cascade",
+      onDelete: "set null",
+    })
+    .default(1),
+});
+
+export const tierTable = sqliteTable("tier", {
+  id: integer().primaryKey(),
+  name: text("name").unique().notNull(),
 });

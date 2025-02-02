@@ -2,14 +2,21 @@ import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../../index.js";
 import db from "../../drizzle/index.js";
-import { urlTable, userTable } from "../../drizzle/schema.js";
+import { urlTable, userTable, tierTable } from "../../drizzle/schema.js";
 
 const SAMPLE_URL_A = "https://example.com";
 
 beforeAll(async () => {
   await db
+    .insert(tierTable)
+    .values([
+      { name: "hobby", id: 1 },
+      { name: "enterprise", id: 2 },
+    ])
+    .onConflictDoNothing();
+  await db
     .insert(userTable)
-    .values({ email: "dummy@example.com", apiKey: "apiKey", id: 1 })
+    .values({ email: "dummy@example.com", apiKey: "apiKey", id: 1, tierId: 1 })
     .onConflictDoNothing();
 });
 

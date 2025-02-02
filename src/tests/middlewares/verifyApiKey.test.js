@@ -32,8 +32,10 @@ describe("verifyApiKey middleware", () => {
     req.headers["x-api-key"] = "invalid-key";
     db.select.mockReturnValue({
       from: jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue(null),
+        innerJoin: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue(null),
+          }),
         }),
       }),
     });
@@ -48,10 +50,12 @@ describe("verifyApiKey middleware", () => {
     req.headers["x-api-key"] = "test-key";
     db.select.mockReturnValue({
       from: jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            apiKey: "different-key",
-            id: 1,
+        innerJoin: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({
+              apiKey: "different-key",
+              id: 1,
+            }),
           }),
         }),
       }),
@@ -70,8 +74,10 @@ describe("verifyApiKey middleware", () => {
 
     db.select.mockReturnValue({
       from: jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue(userRecord),
+        innerJoin: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue(userRecord),
+          }),
         }),
       }),
     });
