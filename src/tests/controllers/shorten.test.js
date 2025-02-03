@@ -105,6 +105,25 @@ describe("POST /shorten", () => {
         expect(res.body.expiryDate).toBe(expiryDate);
       });
   });
+  it("should return 400 with invalid expiry date", () => {
+    const expiryDate = "invalid-date";
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", API_KEY_HOBBY)
+      .send({ url: SAMPLE_URL_A, expiryDate })
+      .then((res) => {
+        expect(res.status).toBe(400);
+      });
+  });
+  it("should return 400 with invalid accessPassword", () => {
+    return request(app)
+      .post("/shorten")
+      .set("X-API-KEY", API_KEY_HOBBY)
+      .send({ url: SAMPLE_URL_A, accessPassword: "" })
+      .then((res) => {
+        expect(res.status).toBe(400);
+      });
+  });
   it("should return 200 OK if custom code is provided", () => {
     return request(app)
       .post("/shorten")

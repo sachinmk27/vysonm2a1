@@ -89,7 +89,7 @@ describe("GET /redirect", () => {
     return request(app)
       .post("/shorten")
       .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A, expiryDate: Date.now() - 1000 })
+      .send({ url: SAMPLE_URL_A, expiryDate: Date.now() - 100000 })
       .then((res) => {
         const shortCode = res.body.shortCode;
         expect(res.status).toBe(200);

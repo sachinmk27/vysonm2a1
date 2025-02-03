@@ -43,7 +43,11 @@ export const redirect = async (req, res) => {
       if (!urlRecord.accessPassword && accessPassword) {
         throw new BadRequestError("Password not required");
       }
-      if (urlRecord.expiryDate && Date.now() > urlRecord.expiryDate) {
+      if (
+        urlRecord.expiryDate !== undefined &&
+        urlRecord.expiryDate !== null &&
+        Date.now() > urlRecord.expiryDate
+      ) {
         throw new NotFoundError("Code has expired");
       }
       await trx

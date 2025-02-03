@@ -22,8 +22,14 @@ async function insertUrlRecord({
     if (!url || !isURLValid(url)) {
       throw new BadRequestError("Invalid URL");
     }
-    if (code === "") {
+    if (code === "" || (code && typeof code !== "string")) {
       throw new BadRequestError("Invalid code");
+    }
+    if (password === "" || (password && typeof password !== "string")) {
+      throw new BadRequestError("Invalid password");
+    }
+    if (isNaN(expiryDate)) {
+      throw new BadRequestError("Invalid expiry date");
     }
     const shortCode = code || faker.string.alpha(10);
     const accessPassword = password
@@ -150,7 +156,8 @@ export const editCode = async (req, res) => {
     const { userRecord } = req;
     if (
       (!expiryDate && !accessPassword) ||
-      (expiryDate && typeof expiryDate !== "number")
+      (expiryDate && typeof expiryDate !== "number") ||
+      (accessPassword && typeof accessPassword !== "string")
     ) {
       throw new BadRequestError("Invalid request");
     }
@@ -175,7 +182,6 @@ export const editCode = async (req, res) => {
       .returning({
         expiryDate: urlTable.expiryDate,
         id: urlTable.id,
-        accessPassword: urlTable.accessPassword,
       });
     return res.json(updatedUrlRecord[0]);
   } catch (err) {
