@@ -41,7 +41,6 @@ async function insertUrlRecord({
       .returning({
         shortCode: urlTable.shortCode,
         expiryDate: urlTable.expiryDate,
-        userId: urlTable.userId,
       });
     return urlRecord[0];
   } catch (err) {

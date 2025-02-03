@@ -2,27 +2,33 @@ import request from "supertest";
 import app from "../../index.js";
 import db from "../../drizzle/index.js";
 import { urlTable, userTable, tierTable } from "../../drizzle/schema.js";
-import { eq } from "drizzle-orm";
 
 const SAMPLE_URL_A = "https://example.com";
 const SAMPLE_URL_B = "https://another-example.com";
-
+const API_KEY_HOBBY = "apiKeyHobby";
+const API_KEY_ENTERPRISE = "apiKeyEnterprise";
 beforeAll(async () => {
   await db
-    .insert(tierTable)
-    .values([
-      { name: "hobby", id: 1 },
-      { name: "enterprise", id: 2 },
-    ])
+    .insert(userTable)
+    .values({
+      email: "enterprise@example.com",
+      apiKey: API_KEY_ENTERPRISE,
+      tierId: 2,
+    })
     .onConflictDoNothing();
   await db
     .insert(userTable)
-    .values({ email: "dummy@example.com", apiKey: "apiKey", id: 1, tierId: 2 })
+    .values({
+      email: "hobby@example.com",
+      apiKey: API_KEY_HOBBY,
+      tierId: 1,
+    })
     .onConflictDoNothing();
 });
 
 afterAll(async () => {
   await db.delete(userTable);
+  await db.delete(urlTable);
 });
 
 afterEach(async () => {
@@ -34,7 +40,7 @@ describe("POST /shorten", () => {
   it("should return 200 OK", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A })
       .then((res) => {
         shortCode = res.body.shortCode;
@@ -44,11 +50,11 @@ describe("POST /shorten", () => {
   it("should return 200 OK with different short code for duplicate URL", async () => {
     await request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A });
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A });
     expect(res.status).toBe(200);
     expect(res.body.shortCode).not.toBe(shortCode);
@@ -56,7 +62,7 @@ describe("POST /shorten", () => {
   it("should return 400 Bad Request for invalid URL format", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: "invalid-url" })
       .then((res) => {
         expect(res.status).toBe(400);
@@ -65,7 +71,7 @@ describe("POST /shorten", () => {
   it("should return 400 Bad Request for missing URL", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({})
       .then((res) => {
         expect(res.status).toBe(400);
@@ -74,7 +80,7 @@ describe("POST /shorten", () => {
   it("should return 400 Bad Request for missing URL", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, code: "" })
       .then((res) => {
         expect(res.status).toBe(400);
@@ -92,7 +98,7 @@ describe("POST /shorten", () => {
     const expiryDate = Date.now() + 1000;
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, expiryDate })
       .then((res) => {
         expect(res.status).toBe(200);
@@ -102,7 +108,7 @@ describe("POST /shorten", () => {
   it("should return 200 OK if custom code is provided", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, code: "custom-code" })
       .then((res) => {
         expect(res.status).toBe(200);
@@ -113,7 +119,7 @@ describe("POST /shorten", () => {
     const expiryDate = Date.now() + 1000;
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({
         url: SAMPLE_URL_A,
         accessPassword: "password",
@@ -132,11 +138,10 @@ describe("POST /shorten", () => {
         shortCode: "custom-code",
         userId: 1,
       })
-      .onConflictDoNothing()
       .then(() => {
         return request(app)
           .post("/shorten")
-          .set("X-API-KEY", "apiKey")
+          .set("X-API-KEY", API_KEY_HOBBY)
           .send({ url: SAMPLE_URL_A, code: "custom-code" })
           .then((res) => {
             expect(res.status).toBe(409);
@@ -151,7 +156,7 @@ describe("POST /shorten", () => {
 
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A })
       .then((res) => {
         expect(res.status).toBe(500);
@@ -167,7 +172,7 @@ describe("DELETE /shorten/:code", () => {
     return request(app)
       .post("/shorten")
       .send({ url: SAMPLE_URL_B })
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         shortCode = res.body.shortCode;
         expect(res.status).toBe(200);
@@ -177,7 +182,7 @@ describe("DELETE /shorten/:code", () => {
   it("should delete the shortened URL", () => {
     return request(app)
       .delete(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         expect(res.status).toBe(204);
       });
@@ -186,7 +191,7 @@ describe("DELETE /shorten/:code", () => {
   it("should return 404 if the code does not exist", () => {
     return request(app)
       .delete(`/shorten/code_does_not_exist`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         expect(res.status).toBe(404);
       });
@@ -195,7 +200,7 @@ describe("DELETE /shorten/:code", () => {
   it("should return 400 if no code is provided", () => {
     return request(app)
       .delete("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         expect(res.status).toBe(400);
       });
@@ -204,7 +209,7 @@ describe("DELETE /shorten/:code", () => {
   it("should not be able to access deleted URL", async () => {
     const deleteRes = await request(app)
       .delete(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey");
+      .set("X-API-KEY", API_KEY_HOBBY);
 
     expect(deleteRes.status).toBe(204);
     const redirectRes = await request(app)
@@ -230,7 +235,7 @@ describe("DELETE /shorten/:code", () => {
 
     return request(app)
       .delete(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         expect(res.status).toBe(500);
         db.delete = originalDelete;
@@ -242,7 +247,7 @@ describe("POST /batch-shorten", () => {
   it("should return 200 OK for valid input", () => {
     return request(app)
       .post("/batch-shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_ENTERPRISE)
       .send({ urls: [{ url: SAMPLE_URL_A }, { url: SAMPLE_URL_B }] })
       .then((res) => {
         expect(res.status).toBe(200);
@@ -253,7 +258,7 @@ describe("POST /batch-shorten", () => {
   it("should return 400 Bad Request for missing URL", () => {
     return request(app)
       .post("/batch-shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_ENTERPRISE)
       .send({})
       .then((res) => {
         expect(res.status).toBe(400);
@@ -283,7 +288,6 @@ describe("POST /batch-shorten", () => {
         value: {
           shortCode: "sample_url_a_code",
           expiryDate: null,
-          userId: 1,
         },
       },
       { status: "error", value: { name: "BadRequestError", status: 400 } },
@@ -292,13 +296,12 @@ describe("POST /batch-shorten", () => {
         value: {
           shortCode: "sample_url_b_code",
           expiryDate: null,
-          userId: 1,
         },
       },
     ];
     return request(app)
       .post("/batch-shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_ENTERPRISE)
       .send(reqBody)
       .then((res) => {
         expect(res.status).toBe(200);
@@ -308,18 +311,9 @@ describe("POST /batch-shorten", () => {
   });
 
   it("should return 403 if tier is not enterprise", async () => {
-    await db
-      .insert(userTable)
-      .values({
-        email: "anotherDummy@example.com",
-        apiKey: "dummyApiKey",
-        id: 3,
-        tierId: 1,
-      })
-      .onConflictDoNothing();
     return request(app)
       .post("/batch-shorten")
-      .set("X-API-KEY", "dummyApiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ urls: [{ url: SAMPLE_URL_A }, { url: SAMPLE_URL_B }] })
       .then((res) => {
         expect(res.status).toBe(403);
@@ -333,7 +327,7 @@ describe("PATCH /shorten/:code", () => {
     return request(app)
       .post("/shorten")
       .send({ url: SAMPLE_URL_A })
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         shortCode = res.body.shortCode;
         expect(res.status).toBe(200);
@@ -344,7 +338,7 @@ describe("PATCH /shorten/:code", () => {
     const expiryDate = Date.now() + 1000;
     return request(app)
       .patch(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ expiryDate })
       .then((res) => {
         expect(res.status).toBe(200);
@@ -355,7 +349,7 @@ describe("PATCH /shorten/:code", () => {
   it("should return 404 Not Found if the code does not exist", () => {
     return request(app)
       .patch("/shorten/code_does_not_exist")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ expiryDate: Date.now() + 1000 })
       .then((res) => {
         expect(res.status).toBe(404);
@@ -365,7 +359,7 @@ describe("PATCH /shorten/:code", () => {
   it("should return 400 Bad Request if input is empty", () => {
     return request(app)
       .patch(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({})
       .then((res) => {
         expect(res.status).toBe(400);
@@ -375,7 +369,7 @@ describe("PATCH /shorten/:code", () => {
   it("should return 400 Bad Request if invalid expiry date is provided", () => {
     return request(app)
       .patch(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ expiryDate: "abc" })
       .then((res) => {
         expect(res.status).toBe(400);
@@ -399,7 +393,7 @@ describe("PATCH /shorten/:code", () => {
 
     return request(app)
       .patch(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ expiryDate: Date.now() + 1000 })
       .then((res) => {
         expect(res.status).toBe(500);
@@ -411,7 +405,7 @@ describe("PATCH /shorten/:code", () => {
     const expiryDate = Date.now() + 1000;
     return request(app)
       .patch(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ accessPassword: "password", expiryDate })
       .then((res) => {
         expect(res.status).toBe(200);
@@ -422,7 +416,7 @@ describe("PATCH /shorten/:code", () => {
   it("should return 200 OK for valid input with only access password", () => {
     return request(app)
       .patch(`/shorten/${shortCode}`)
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ accessPassword: "password" })
       .then((res) => {
         expect(res.status).toBe(200);

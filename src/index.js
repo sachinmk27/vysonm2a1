@@ -4,6 +4,7 @@ import controllers from "./controllers/index.js";
 import verifyApiKey from "./middlewares/verifyApiKey.js";
 import verifyTier from "./middlewares/verifyTier.js";
 import { tierTable } from "./drizzle/schema.js";
+import { insertUser } from "./drizzle/utils.js";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,9 @@ async function initializeDatabase() {
       { name: "enterprise", id: 2 },
     ])
     .onConflictDoNothing();
+  await insertUser("abc@example.com", 1);
+  await insertUser("xyz@example.com", 1);
+  await insertUser("pqr@example.com", 1);
 }
 
 async function startServer() {

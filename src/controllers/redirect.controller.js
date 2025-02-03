@@ -8,7 +8,7 @@ export const redirect = async (req, res) => {
   try {
     const { code, accessPassword } = req.query;
     if (!code) {
-      return res.status(400).send("Bad Request");
+      throw new BadRequestError("Code is required");
     }
     const urlRecord = await db.transaction(async (trx) => {
       const urlRecord = await trx

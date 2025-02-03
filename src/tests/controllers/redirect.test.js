@@ -5,24 +5,23 @@ import db from "../../drizzle/index.js";
 import { urlTable, userTable, tierTable } from "../../drizzle/schema.js";
 
 const SAMPLE_URL_A = "https://example.com";
-
+const SAMPLE_URL_B = "https://another-example.com";
+const API_KEY_HOBBY = "apiKeyHobby";
+const API_KEY_ENTERPRISE = "apiKeyEnterprise";
 beforeAll(async () => {
   await db
-    .insert(tierTable)
-    .values([
-      { name: "hobby", id: 1 },
-      { name: "enterprise", id: 2 },
-    ])
-    .onConflictDoNothing();
-  await db
     .insert(userTable)
-    .values({ email: "dummy@example.com", apiKey: "apiKey", id: 1, tierId: 1 })
+    .values({
+      email: "hobby@example.com",
+      apiKey: API_KEY_HOBBY,
+      tierId: 1,
+    })
     .onConflictDoNothing();
 });
 
 afterAll(async () => {
-  await db.delete(urlTable).where(eq(urlTable.userId, 1));
-  await db.delete(userTable).where(eq(userTable.id, 1));
+  await db.delete(urlTable);
+  await db.delete(userTable);
 });
 
 describe("GET /redirect", () => {
@@ -31,7 +30,7 @@ describe("GET /redirect", () => {
   beforeEach(() => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A })
       .then((res) => {
         shortCode = res.body.shortCode;
@@ -89,7 +88,7 @@ describe("GET /redirect", () => {
   it("should return 404 if the URL has expired", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, expiryDate: Date.now() - 1000 })
       .then((res) => {
         const shortCode = res.body.shortCode;
@@ -105,7 +104,7 @@ describe("GET /redirect", () => {
   it("should return 302 if the URL has not expired", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, expiryDate: Date.now() + 60 * 60 * 1000 })
       .then((res) => {
         const shortCode = res.body.shortCode;
@@ -135,7 +134,7 @@ describe("GET /redirect", () => {
     const accessPassword = "password";
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, accessPassword });
     const shortCode = res.body.shortCode;
     expect(res.status).toBe(200);
@@ -152,7 +151,7 @@ describe("GET /redirect", () => {
   it("should return 400 for passing password when not set", async () => {
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A });
     const shortCode = res.body.shortCode;
     expect(res.status).toBe(200);
@@ -167,7 +166,7 @@ describe("GET /redirect", () => {
     const accessPassword = "password";
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", "apiKey")
+      .set("X-API-KEY", API_KEY_HOBBY)
       .send({ url: SAMPLE_URL_A, accessPassword: accessPassword });
     const shortCode = res.body.shortCode;
     expect(res.status).toBe(200);
