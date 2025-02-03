@@ -11,8 +11,14 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.get("/ping", (req, res) => {
-  res.status(200).send("pong");
+app.get("/ping", async (_, res) => {
+  try {
+    await db.select(1);
+    return res.send("pong");
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    return res.sendStatus(500);
+  }
 });
 
 app.post("/shorten", verifyApiKey, controllers.shorten);
@@ -24,7 +30,7 @@ app.post(
 );
 app.get("/redirect", controllers.redirect);
 app.delete("/shorten/:code?", verifyApiKey, controllers.deleteCode);
-app.patch("/shorten/:code", verifyApiKey, controllers.editCode);
+app.patch("/shorten/:code?", verifyApiKey, controllers.editCode);
 app.get(
   "/shorten",
   verifyApiKey,

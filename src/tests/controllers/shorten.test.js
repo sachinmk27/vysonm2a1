@@ -116,7 +116,7 @@ describe("POST /shorten", () => {
       });
   });
   it("should return 200 OK if access password is provided", () => {
-    const expiryDate = Date.now() + 1000;
+    const expiryDate = Date.now() + 60 * 60 * 1000;
     return request(app)
       .post("/shorten")
       .set("X-API-KEY", API_KEY_HOBBY)
@@ -128,6 +128,12 @@ describe("POST /shorten", () => {
       .then((res) => {
         expect(res.status).toBe(200);
         expect(res.body.expiryDate).toBe(expiryDate);
+        return request(app)
+          .get("/redirect")
+          .query({ code: res.body.shortCode, accessPassword: "password" });
+      })
+      .then((res) => {
+        expect(res.status).toBe(302);
       });
   });
   it("should return 409 Conflict if duplicate custom code is provided", () => {
@@ -432,6 +438,12 @@ describe("PATCH /shorten/:code", () => {
       .send({ accessPassword: "password" })
       .then((res) => {
         expect(res.status).toBe(200);
+        return request(app)
+          .get("/redirect")
+          .query({ code: shortCode, accessPassword: "password" });
+      })
+      .then((res) => {
+        expect(res.status).toBe(302);
       });
   });
 });
