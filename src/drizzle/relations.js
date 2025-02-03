@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { urlTable, userTable } from "./schema.js";
+import { urlTable, userTable, tierTable } from "./schema.js";
 
 export const urlRelations = relations(urlTable, ({ one }) => {
   return {

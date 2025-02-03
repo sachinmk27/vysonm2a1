@@ -179,8 +179,10 @@ export const editCode = async (req, res) => {
 
 export const getCodes = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10 } = req.query;
     const { userRecord } = req;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
     const urlRecords = await db
       .select({
         shortCode: urlTable.shortCode,
@@ -190,11 +192,10 @@ export const getCodes = async (req, res) => {
       .from(urlTable)
       .where(eq(urlTable.userId, userRecord.id))
       .orderBy(asc(urlTable.id))
-      .offset((page - 1) * pageSize)
+      .offset(offset)
       .limit(pageSize);
     res.json(urlRecords);
   } catch (err) {
-    console.log(err);
     res.status(500).send("Internal Server Error");
   }
 };
