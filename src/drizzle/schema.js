@@ -40,7 +40,7 @@ export const userTable = sqliteTable("user", {
   tierId: integer("tier_id")
     .references(() => tierTable.id, {
       onUpdate: "cascade",
-      onDelete: "set null",
+      onDelete: "set default",
     })
     .default(1),
 });
