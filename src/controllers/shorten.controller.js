@@ -75,11 +75,14 @@ export const deleteCode = async (req, res) => {
   try {
     const { code } = req.params;
     const { userRecord } = req;
-    const urlRecord = await getUrlRecord(code, userRecord.id);
+    const urlRecord = await getUrlRecordByUserId(code, userRecord.id);
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
-    await db.delete(urlTable).where(eq(urlTable.shortCode, code));
+    await db
+      .update(urlTable)
+      .set({ isDeleted: 1 })
+      .where(eq(urlTable.id, urlRecord.id));
     res.status(204).send();
   } catch (err) {
     if (err instanceof NotFoundError || err instanceof BadRequestError) {
@@ -121,13 +124,14 @@ export const batchShorten = async (req, res) => {
   }
 };
 
-async function getUrlRecord(code, userId) {
+async function getUrlRecordByUserId(code, userId) {
   if (!code) {
     throw new BadRequestError("Invalid code");
   }
   const urlRecord = await db
     .select({
       id: urlTable.id,
+      isDeleted: urlTable.isDeleted,
     })
     .from(urlTable)
     .innerJoin(userTable, eq(urlTable.userId, userTable.id))
@@ -147,8 +151,11 @@ export const editCode = async (req, res) => {
     ) {
       throw new BadRequestError("Invalid request");
     }
-    const urlRecord = await getUrlRecord(code, userRecord.id);
+    const urlRecord = await getUrlRecordByUserId(code, userRecord.id);
     if (!urlRecord) {
+      throw new NotFoundError("Not Found");
+    }
+    if (urlRecord.isDeleted) {
       throw new NotFoundError("Not Found");
     }
     const hashedPassword = accessPassword

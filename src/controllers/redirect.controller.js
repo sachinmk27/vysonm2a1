@@ -17,11 +17,15 @@ export const redirect = async (req, res) => {
           visitCount: urlTable.visitCount,
           expiryDate: urlTable.expiryDate,
           accessPassword: urlTable.accessPassword,
+          isDeleted: urlTable.isDeleted,
         })
         .from(urlTable)
         .where(eq(urlTable.shortCode, code))
         .get();
       if (!urlRecord) {
+        throw new NotFoundError("Invalid code");
+      }
+      if (urlRecord && urlRecord.isDeleted) {
         throw new NotFoundError("Invalid code");
       }
       if (urlRecord.accessPassword) {

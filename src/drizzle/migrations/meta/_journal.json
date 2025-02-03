@@ -71,6 +71,13 @@
       "when": 1738566650316,
       "tag": "0009_lumpy_cardiac",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1738574302015,
+      "tag": "0010_legal_husk",
+      "breakpoints": true
     }
   ]
 }

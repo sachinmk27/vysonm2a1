@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../../index.js";
 import db from "../../drizzle/index.js";
-import { urlTable, userTable, tierTable } from "../../drizzle/schema.js";
+import { urlTable, userTable } from "../../drizzle/schema.js";
 
 const SAMPLE_URL_A = "https://example.com";
 const SAMPLE_URL_B = "https://another-example.com";
@@ -228,8 +228,9 @@ describe("DELETE /shorten/:code", () => {
   });
 
   it("should return 500 if database error occurs", () => {
-    const originalDelete = db.delete;
-    db.delete = jest.fn().mockImplementation(() => {
+    const originalUpdate = db.update;
+    // Soft delete
+    db.update = jest.fn().mockImplementation(() => {
       throw new Error("Database error");
     });
 
@@ -238,7 +239,7 @@ describe("DELETE /shorten/:code", () => {
       .set("X-API-KEY", API_KEY_HOBBY)
       .then((res) => {
         expect(res.status).toBe(500);
-        db.delete = originalDelete;
+        db.update = originalUpdate;
       });
   });
 });
@@ -354,6 +355,17 @@ describe("PATCH /shorten/:code", () => {
       .then((res) => {
         expect(res.status).toBe(404);
       });
+  });
+
+  it("should return 404 Not Found if the code has been deleted", async () => {
+    await request(app)
+      .delete(`/shorten/${shortCode}`)
+      .set("X-API-KEY", API_KEY_HOBBY);
+    const res = await request(app)
+      .patch(`/shorten/${shortCode}`)
+      .set("X-API-KEY", API_KEY_HOBBY)
+      .send({ expiryDate: Date.now() + 1000 });
+    expect(res.status).toBe(404);
   });
 
   it("should return 400 Bad Request if input is empty", () => {
