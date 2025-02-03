@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import db from "./drizzle/index.js";
 import controllers from "./controllers/index.js";
 import verifyApiKey from "./middlewares/verifyApiKey.js";
@@ -8,6 +9,7 @@ import { insertUser } from "./drizzle/utils.js";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 app.get("/ping", (req, res) => {
   res.status(200).send("pong");
