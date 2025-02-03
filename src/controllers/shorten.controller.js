@@ -47,7 +47,10 @@ async function insertUrlRecord({
     if (err instanceof BadRequestError || err instanceof ConflictError) {
       throw err;
     }
-    if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    if (
+      err.code === "SQLITE_CONSTRAINT_UNIQUE" ||
+      err.code === "SQLITE_CONSTRAINT" // Turso error code
+    ) {
       throw new ConflictError("Code already exists");
     }
     throw new InternalServerError("Internal Error");
