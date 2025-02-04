@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "jest --runInBand --watchAll --coverage",
+    "test": "jest --runInBand --watchAll --coverage --globalSetup=./src/jest.global.setup.js",
     "load-test": "k6 run src/load-test.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

@@ -38,7 +38,7 @@ app.get(
   controllers.getCodes
 );
 
-async function initializeDatabase() {
+export async function initializeDatabase() {
   await db
     .insert(tierTable)
     .values([
