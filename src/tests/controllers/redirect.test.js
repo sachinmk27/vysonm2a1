@@ -2,20 +2,13 @@ import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../../index.js";
 import db from "../../drizzle/index.js";
-import { urlTable, userTable, tierTable } from "../../drizzle/schema.js";
+import { urlTable, userTable } from "../../drizzle/schema.js";
+import * as MOCKS from "../mocks.js";
 
-const SAMPLE_URL_A = "https://example.com";
-const SAMPLE_URL_B = "https://another-example.com";
-const API_KEY_HOBBY = "apiKeyHobby";
-const API_KEY_ENTERPRISE = "apiKeyEnterprise";
 beforeAll(async () => {
   await db
     .insert(userTable)
-    .values({
-      email: "hobby@example.com",
-      apiKey: API_KEY_HOBBY,
-      tierId: 1,
-    })
+    .values(MOCKS.SAMPLE_USER_HOBBY)
     .onConflictDoNothing();
 });
 
@@ -30,8 +23,8 @@ describe("GET /redirect", () => {
   beforeEach(() => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A })
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({ url: MOCKS.SAMPLE_URL_A })
       .then((res) => {
         shortCode = res.body.shortCode;
         expect(res.status).toBe(200);
@@ -44,7 +37,7 @@ describe("GET /redirect", () => {
       .then((res) => {
         const redirectUrl = res.headers.location;
         expect(res.status).toBe(302);
-        expect(redirectUrl).toBe(SAMPLE_URL_A);
+        expect(redirectUrl).toBe(MOCKS.SAMPLE_URL_A);
       });
   });
   it("should return 404 Not Found", () => {
@@ -74,7 +67,7 @@ describe("GET /redirect", () => {
     const res = await request(app).get("/redirect").query({ code: shortCode });
     const redirectUrl = res.headers.location;
     expect(res.status).toBe(302);
-    expect(redirectUrl).toBe(SAMPLE_URL_A);
+    expect(redirectUrl).toBe(MOCKS.SAMPLE_URL_A);
     const updatedRecord = await db
       .select({
         visitCount: urlTable.visitCount,
@@ -88,8 +81,8 @@ describe("GET /redirect", () => {
   it("should return 404 if the URL has expired", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A, expiryDate: Date.now() - 100000 })
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({ url: MOCKS.SAMPLE_URL_A, expiryDate: Date.now() - 100000 })
       .then((res) => {
         const shortCode = res.body.shortCode;
         expect(res.status).toBe(200);
@@ -104,8 +97,11 @@ describe("GET /redirect", () => {
   it("should return 302 if the URL has not expired", () => {
     return request(app)
       .post("/shorten")
-      .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A, expiryDate: Date.now() + 60 * 60 * 1000 })
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({
+        url: MOCKS.SAMPLE_URL_A,
+        expiryDate: Date.now() + 60 * 60 * 1000,
+      })
       .then((res) => {
         const shortCode = res.body.shortCode;
         expect(res.status).toBe(200);
@@ -134,8 +130,8 @@ describe("GET /redirect", () => {
     const accessPassword = "password";
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A, accessPassword });
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({ url: MOCKS.SAMPLE_URL_A, accessPassword });
     const shortCode = res.body.shortCode;
     expect(res.status).toBe(200);
 
@@ -145,14 +141,14 @@ describe("GET /redirect", () => {
       .then((res) => {
         const redirectUrl = res.headers.location;
         expect(res.status).toBe(302);
-        expect(redirectUrl).toBe(SAMPLE_URL_A);
+        expect(redirectUrl).toBe(MOCKS.SAMPLE_URL_A);
       });
   });
   it("should return 400 for passing password when not set", async () => {
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A });
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({ url: MOCKS.SAMPLE_URL_A });
     const shortCode = res.body.shortCode;
     expect(res.status).toBe(200);
 
@@ -166,8 +162,8 @@ describe("GET /redirect", () => {
     const accessPassword = "password";
     const res = await request(app)
       .post("/shorten")
-      .set("X-API-KEY", API_KEY_HOBBY)
-      .send({ url: SAMPLE_URL_A, accessPassword: accessPassword });
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({ url: MOCKS.SAMPLE_URL_A, accessPassword: accessPassword });
     const shortCode = res.body.shortCode;
     expect(res.status).toBe(200);
 
