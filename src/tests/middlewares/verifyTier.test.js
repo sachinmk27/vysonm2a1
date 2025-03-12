@@ -1,5 +1,6 @@
 import verifyTier from "../../middlewares/verifyTier.js";
 import db from "../../drizzle/index.js";
+import { ForbiddenError, UnauthorizedError } from "../../utils.js";
 
 jest.mock("../../drizzle/index.js");
 
@@ -22,9 +23,8 @@ describe("verifyTier middleware", () => {
   it("should return 401 if userRecord is missing", async () => {
     req.userRecord = null;
     await verifyTier("hobby")(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.send).toHaveBeenCalledWith("Unauthorized");
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(new UnauthorizedError("Unauthorized"));
   });
 
   it("should return 403 if tiers don't match", async () => {
@@ -41,11 +41,13 @@ describe("verifyTier middleware", () => {
     });
 
     await verifyTier("hobby")(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.send).toHaveBeenCalledWith(
-      "Forbidden. Upgrade your account to access this feature."
+
+    expect(next).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(
+      new ForbiddenError(
+        "Forbidden. Upgrade your account to access this feature."
+      )
     );
-    expect(next).not.toHaveBeenCalled();
   });
 
   it("should call next if tiers match", async () => {
@@ -63,7 +65,5 @@ describe("verifyTier middleware", () => {
 
     await verifyTier("hobby")(req, res, next);
     expect(next).toHaveBeenCalled();
-    expect(res.status).not.toHaveBeenCalled();
-    expect(res.send).not.toHaveBeenCalled();
   });
 });

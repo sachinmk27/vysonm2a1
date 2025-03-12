@@ -4,7 +4,7 @@ import db from "../drizzle/index.js";
 import { urlTable } from "../drizzle/schema.js";
 import { BadRequestError, NotFoundError, UnauthorizedError } from "../utils.js";
 
-export const redirect = async (req, res) => {
+export const redirect = async (req, res, next) => {
   try {
     const { code, accessPassword } = req.query;
     if (!code) {
@@ -61,13 +61,6 @@ export const redirect = async (req, res) => {
     });
     res.redirect(urlRecord.originalUrl);
   } catch (err) {
-    if (
-      err instanceof NotFoundError ||
-      err instanceof UnauthorizedError ||
-      err instanceof BadRequestError
-    ) {
-      return res.status(err.status).send(err.message);
-    }
-    res.status(500).send("Internal Server Error");
+    next(err);
   }
 };

@@ -63,7 +63,7 @@ async function insertUrlRecord({
   }
 }
 
-export const shorten = async (req, res) => {
+export const shorten = async (req, res, next) => {
   try {
     const { url, expiryDate, code, accessPassword } = req.body;
     const { userRecord } = req;
@@ -76,11 +76,11 @@ export const shorten = async (req, res) => {
     });
     res.json(urlRecord);
   } catch (err) {
-    res.status(err.status).send(err.message);
+    next(err);
   }
 };
 
-export const deleteCode = async (req, res) => {
+export const deleteCode = async (req, res, next) => {
   try {
     const { code } = req.params;
     const { userRecord } = req;
@@ -94,14 +94,11 @@ export const deleteCode = async (req, res) => {
       .where(eq(urlTable.id, urlRecord.id));
     res.status(204).send();
   } catch (err) {
-    if (err instanceof NotFoundError || err instanceof BadRequestError) {
-      return res.status(err.status).send(err.message);
-    }
-    res.status(500).send("Internal Server Error");
+    next(err);
   }
 };
 
-export const batchShorten = async (req, res) => {
+export const batchShorten = async (req, res, next) => {
   try {
     const { urls } = req.body;
     const { userRecord } = req;
@@ -126,10 +123,7 @@ export const batchShorten = async (req, res) => {
       }))
     );
   } catch (err) {
-    if (err instanceof BadRequestError) {
-      return res.status(err.status).send(err.message);
-    }
-    res.status(500).send("Internal Server Error");
+    next(err);
   }
 };
 
@@ -149,7 +143,7 @@ async function getUrlRecordByUserId(code, userId) {
   return urlRecord;
 }
 
-export const editCode = async (req, res) => {
+export const editCode = async (req, res, next) => {
   try {
     const { code } = req.params;
     const { expiryDate, accessPassword } = req.body;
@@ -185,14 +179,11 @@ export const editCode = async (req, res) => {
       });
     return res.json(updatedUrlRecord[0]);
   } catch (err) {
-    if (err instanceof NotFoundError || err instanceof BadRequestError) {
-      return res.status(err.status).send(err.message);
-    }
-    res.status(500).send("Internal Server Error");
+    next(err);
   }
 };
 
-export const getCodes = async (req, res) => {
+export const getCodes = async (req, res, next) => {
   try {
     const { userRecord } = req;
     const page = parseInt(req.query.page) || 1;
@@ -211,6 +202,6 @@ export const getCodes = async (req, res) => {
       .limit(pageSize);
     res.json(urlRecords);
   } catch (err) {
-    res.status(500).send("Internal Server Error");
+    next(err);
   }
 };

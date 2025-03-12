@@ -24,9 +24,6 @@ export default async function verifyApiKey(req, res, next) {
     req.userRecord = userRecord;
     next();
   } catch (error) {
-    if (error instanceof UnauthorizedError) {
-      return res.status(error.status).send(error.message);
-    }
-    res.status(500).send("Internal Server Error");
+    next(error);
   }
 }

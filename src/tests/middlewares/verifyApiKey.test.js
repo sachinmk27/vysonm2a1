@@ -1,6 +1,7 @@
 import verifyApiKey from "../../middlewares/verifyApiKey.js";
 import db from "../../drizzle/index.js";
 import { userTable } from "../../drizzle/schema.js";
+import { UnauthorizedError } from "../../utils.js";
 
 jest.mock("../../drizzle/index.js");
 
@@ -23,9 +24,8 @@ describe("verifyApiKey middleware", () => {
 
   it("should return 401 if x-api-key header is missing", async () => {
     await verifyApiKey(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.send).toHaveBeenCalledWith("Unauthorized");
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(new UnauthorizedError("Unauthorized"));
   });
 
   it("should return 401 if user not found", async () => {
@@ -41,9 +41,8 @@ describe("verifyApiKey middleware", () => {
     });
 
     await verifyApiKey(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.send).toHaveBeenCalledWith("Unauthorized");
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(new UnauthorizedError("Unauthorized"));
   });
 
   it("should call next() and set userRecord if api key is valid", async () => {
@@ -64,7 +63,5 @@ describe("verifyApiKey middleware", () => {
     await verifyApiKey(req, res, next);
     expect(req.userRecord).toEqual(userRecord);
     expect(next).toHaveBeenCalled();
-    expect(res.status).not.toHaveBeenCalled();
-    expect(res.send).not.toHaveBeenCalled();
   });
 });

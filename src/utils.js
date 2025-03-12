@@ -68,3 +68,11 @@ export class InternalServerError extends Error {
     this.status = 500;
   }
 }
+
+export class ForbiddenError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "ForbiddenError";
+    this.status = 403;
+  }
+}
