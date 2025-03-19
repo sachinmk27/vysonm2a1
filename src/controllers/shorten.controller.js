@@ -10,6 +10,7 @@ import {
   isURLValid,
   NotFoundError,
 } from "../utils.js";
+import redisClient from "../redis.js";
 
 async function insertUrlRecord({
   url,
@@ -88,11 +89,15 @@ export const deleteCode = async (req, res, next) => {
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
     await db
       .update(urlTable)
       .set({ isDeleted: 1 })
       .where(eq(urlTable.id, urlRecord.id));
-    res.status(204).send();
+    await redisClient.set(code, JSON.stringify({ ...urlRecord, isDeleted: 1 }));
+    await res.status(204).send();
   } catch (err) {
     next(err);
   }
@@ -134,6 +139,10 @@ async function getUrlRecordByUserId(code, userId) {
   const urlRecord = await db
     .select({
       id: urlTable.id,
+      originalUrl: urlTable.originalUrl,
+      visitCount: urlTable.visitCount,
+      expiryDate: urlTable.expiryDate,
+      accessPassword: urlTable.accessPassword,
       isDeleted: urlTable.isDeleted,
     })
     .from(urlTable)
@@ -146,16 +155,26 @@ async function getUrlRecordByUserId(code, userId) {
 export const editCode = async (req, res, next) => {
   try {
     const { code } = req.params;
-    const { expiryDate, accessPassword } = req.body;
+    const { expiryDate, accessPassword, url } = req.body;
     const { userRecord } = req;
     if (
-      (!expiryDate && !accessPassword) ||
+      (!expiryDate && !accessPassword && !url) ||
       (expiryDate && typeof expiryDate !== "number") ||
-      (accessPassword && typeof accessPassword !== "string")
+      (accessPassword && typeof accessPassword !== "string") ||
+      (url && !isURLValid(url))
     ) {
       throw new BadRequestError("Invalid request");
     }
-    const urlRecord = await getUrlRecordByUserId(code, userRecord.id);
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    const codeExistsInCache = await redisClient.exists(code);
+    let urlRecord;
+    if (codeExistsInCache) {
+      urlRecord = JSON.parse(await redisClient.get(code));
+    } else {
+      urlRecord = await getUrlRecordByUserId(code, userRecord.id);
+    }
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
@@ -165,18 +184,23 @@ export const editCode = async (req, res, next) => {
     const hashedPassword = accessPassword
       ? await bcrypt.hash(accessPassword, 10)
       : undefined;
-    const updatedExpiryDate = expiryDate ? expiryDate : urlRecord.expiryDate;
+    const modifiedFields = {};
+    if (expiryDate) modifiedFields.expiryDate = expiryDate;
+    if (accessPassword) modifiedFields.accessPassword = hashedPassword;
+    if (url) modifiedFields.originalUrl = url;
     const updatedUrlRecord = await db
       .update(urlTable)
-      .set({
-        expiryDate: updatedExpiryDate,
-        accessPassword: hashedPassword,
-      })
+      .set(modifiedFields)
       .where(eq(urlTable.id, urlRecord.id))
       .returning({
-        expiryDate: urlTable.expiryDate,
         id: urlTable.id,
+        originalUrl: urlTable.originalUrl,
+        visitCount: urlTable.visitCount,
+        expiryDate: urlTable.expiryDate,
+        accessPassword: urlTable.accessPassword,
+        isDeleted: urlTable.isDeleted,
       });
+    await redisClient.set(code, JSON.stringify(updatedUrlRecord[0]));
     return res.json(updatedUrlRecord[0]);
   } catch (err) {
     next(err);

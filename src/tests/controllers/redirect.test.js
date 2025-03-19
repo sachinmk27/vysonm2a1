@@ -114,9 +114,15 @@ describe("GET /redirect", () => {
       });
   });
   it("should return 500 if there is a database error", () => {
-    jest
-      .spyOn(db, "transaction")
-      .mockRejectedValueOnce(new Error("Database error"));
+    jest.spyOn(db, "select").mockImplementation(() => ({
+      from: jest.fn(() => ({
+        where: jest.fn(() => ({
+          get: jest.fn(() => {
+            throw new Error("Database error");
+          }),
+        })),
+      })),
+    }));
 
     return request(app)
       .get("/redirect")
@@ -171,5 +177,29 @@ describe("GET /redirect", () => {
       .get("/redirect")
       .query({ code: shortCode, accessPassword: "invalid_password" });
     expect(resEmptyPassword.status).toBe(401);
+  });
+
+  it("should not do a db call if the code is in the cache", async () => {
+    const res = await request(app)
+      .post("/shorten")
+      .set("X-API-KEY", MOCKS.API_KEY_HOBBY)
+      .send({ url: MOCKS.SAMPLE_URL_A });
+    const shortCode = res.body.shortCode;
+    expect(res.status).toBe(200);
+
+    const resRedirect = await request(app)
+      .get("/redirect")
+      .query({ code: shortCode });
+    expect(resRedirect.status).toBe(302);
+
+    const transactionSpy = jest.spyOn(db, "select");
+
+    const resRedirectCache = await request(app)
+      .get("/redirect")
+      .query({ code: shortCode });
+    expect(resRedirectCache.status).toBe(302);
+    expect(transactionSpy).not.toHaveBeenCalled();
+
+    transactionSpy.mockRestore();
   });
 });

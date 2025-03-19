@@ -26,6 +26,7 @@
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.4",
     "express": "^4.21.2",
+    "redis": "^4.7.0",
     "sqlite3": "^5.1.7",
     "winston": "^3.17.0",
     "winston-transport-sentry-node": "^3.0.0"

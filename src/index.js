@@ -36,7 +36,7 @@ app.get("/ping", async (_, res) => {
     await db.select(1);
     return res.send("pong");
   } catch (error) {
-    console.error("Database connection failed:", error);
+    winstonLogger.error("Database connection failed:", error);
     return res.sendStatus(500);
   }
 });
