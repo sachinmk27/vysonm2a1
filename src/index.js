@@ -41,39 +41,18 @@ app.get("/ping", async (_, res) => {
   }
 });
 
-app.post(
-  "/shorten",
-  timingLogWrapper(blacklist),
-  timingLogWrapper(verifyApiKey),
-  controllers.shorten
-);
-app.post(
-  "/batch-shorten",
-  timingLogWrapper(blacklist),
-  timingLogWrapper(verifyApiKey),
-  timingLogWrapper(configureVerifyTier("enterprise")),
-  controllers.batchShorten
-);
 app.get("/redirect", controllers.redirect);
-app.delete(
-  "/shorten/:code?",
-  timingLogWrapper(blacklist),
-  timingLogWrapper(verifyApiKey),
-  controllers.deleteCode
-);
-app.patch(
-  "/shorten/:code?",
-  timingLogWrapper(blacklist),
-  timingLogWrapper(verifyApiKey),
-  controllers.editCode
-);
-app.get(
-  "/shorten",
-  timingLogWrapper(blacklist),
-  timingLogWrapper(verifyApiKey),
-  timingLogWrapper(configureVerifyTier("enterprise")),
-  controllers.getCodes
-);
+
+app.use(timingLogWrapper(blacklist));
+app.use(timingLogWrapper(verifyApiKey));
+
+app.post("/shorten", controllers.shorten);
+app.delete("/shorten/:code?", controllers.deleteCode);
+app.patch("/shorten/:code?", controllers.editCode);
+
+app.use(timingLogWrapper(configureVerifyTier("enterprise")));
+app.post("/batch-shorten", controllers.batchShorten);
+app.get("/shorten", controllers.getCodes);
 
 app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
