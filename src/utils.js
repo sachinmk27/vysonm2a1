@@ -76,3 +76,11 @@ export class ForbiddenError extends Error {
     this.status = 403;
   }
 }
+
+export class RateLimitError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "RateLimitError";
+    this.status = 429;
+  }
+}

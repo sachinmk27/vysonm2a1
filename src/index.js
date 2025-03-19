@@ -12,6 +12,7 @@ import logger from "./middlewares/logger.js";
 import responseTime from "./middlewares/responseTime.js";
 import timingLogWrapper from "./middlewares/timingLogWrapper.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import rateLimiterByIP from "./middlewares/rateLimiterByIP.js";
 import winstonLogger from "./logger.js";
 
 const app = express();
@@ -41,7 +42,11 @@ app.get("/ping", async (_, res) => {
   }
 });
 
-app.get("/redirect", controllers.redirect);
+app.get(
+  "/redirect",
+  rateLimiterByIP({ limit: 100, window: 60 }),
+  controllers.redirect
+);
 
 app.use(timingLogWrapper(blacklist));
 app.use(timingLogWrapper(verifyApiKey));
