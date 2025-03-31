@@ -14,6 +14,7 @@ import errorHandler from "./middlewares/errorHandler.js";
 import rateLimiter from "./middlewares/rateLimiter.js";
 import winstonLogger from "./logger.js";
 import { TIERS } from "./constants.js";
+import rateLimiterByTier from "./middlewares/rateLimiterByTier.js";
 
 const app = express();
 
@@ -39,6 +40,17 @@ if (process.env.NODE_ENV !== "test") {
         timeWindowInSeconds: 60,
         redisKeyPrefix: `rateLimit:ip`,
         getRedisKey: (req) => req.ip,
+      })
+    )
+  );
+  app.use(
+    timingLogWrapper(
+      rateLimiterByTier({
+        tier: TIERS.FREE,
+        requestLimit: 5,
+        timeWindowInSeconds: 60,
+        redisKeyPrefix: `rateLimit:tier`,
+        getRedisKey: (req) => req.headers["x-api-key"],
       })
     )
   );
@@ -87,7 +99,7 @@ app.post("/shorten", controllers.shorten);
 app.delete("/shorten/:code?", controllers.deleteCode);
 app.patch("/shorten/:code?", controllers.editCode);
 
-app.use(timingLogWrapper(configureVerifyTier("enterprise")));
+app.use(timingLogWrapper(configureVerifyTier(TIERS.ENTERPRISE)));
 app.post("/batch-shorten", controllers.batchShorten);
 app.get("/shorten", controllers.getCodes);
 

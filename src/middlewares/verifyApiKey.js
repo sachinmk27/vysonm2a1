@@ -13,6 +13,7 @@ export default async function verifyApiKey(req, res, next) {
         apiKey: userTable.apiKey,
         id: userTable.id,
         tierId: userTable.tierId,
+        tierName: tierTable.name,
       })
       .from(userTable)
       .innerJoin(tierTable, eq(userTable.tierId, tierTable.id))

@@ -20,7 +20,7 @@ describe("blacklist middleware", () => {
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
     };
-    next = jest.fn((value) => console.log(value));
+    next = jest.fn();
     jest.clearAllMocks();
   });
 
