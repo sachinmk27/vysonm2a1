@@ -85,18 +85,28 @@ export const deleteCode = async (req, res, next) => {
   try {
     const { code } = req.params;
     const { userRecord } = req;
-    const urlRecord = await getUrlRecordByUserId(code, userRecord.id);
-    if (!urlRecord) {
-      throw new NotFoundError("Not Found");
-    }
     if (!redisClient.isOpen) {
       await redisClient.connect();
+    }
+    const redisKey = `shortCode:${code}`;
+    const codeExistsInCache = await redisClient.exists(redisKey);
+    let urlRecord;
+    if (codeExistsInCache) {
+      urlRecord = JSON.parse(await redisClient.get(redisKey));
+    } else {
+      urlRecord = await getUrlRecordByUserId(code, userRecord.id);
+    }
+    if (!urlRecord) {
+      throw new NotFoundError("Not Found");
     }
     await db
       .update(urlTable)
       .set({ isDeleted: 1 })
       .where(eq(urlTable.id, urlRecord.id));
-    await redisClient.set(code, JSON.stringify({ ...urlRecord, isDeleted: 1 }));
+    await redisClient.set(
+      redisKey,
+      JSON.stringify({ ...urlRecord, isDeleted: 1 })
+    );
     await res.status(204).send();
   } catch (err) {
     next(err);
@@ -168,10 +178,11 @@ export const editCode = async (req, res, next) => {
     if (!redisClient.isOpen) {
       await redisClient.connect();
     }
-    const codeExistsInCache = await redisClient.exists(code);
+    const redisKey = `shortCode:${code}`;
+    const codeExistsInCache = await redisClient.exists(redisKey);
     let urlRecord;
     if (codeExistsInCache) {
-      urlRecord = JSON.parse(await redisClient.get(code));
+      urlRecord = JSON.parse(await redisClient.get(redisKey));
     } else {
       urlRecord = await getUrlRecordByUserId(code, userRecord.id);
     }
@@ -200,7 +211,7 @@ export const editCode = async (req, res, next) => {
         accessPassword: urlTable.accessPassword,
         isDeleted: urlTable.isDeleted,
       });
-    await redisClient.set(code, JSON.stringify(updatedUrlRecord[0]));
+    await redisClient.set(redisKey, JSON.stringify(updatedUrlRecord[0]));
     return res.json(updatedUrlRecord[0]);
   } catch (err) {
     next(err);

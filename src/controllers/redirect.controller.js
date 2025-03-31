@@ -14,10 +14,11 @@ export const redirect = async (req, res, next) => {
     if (!redisClient.isOpen) {
       await redisClient.connect();
     }
-    const codeExistsInCache = await redisClient.exists(code);
+    const redisKey = `shortCode:${code}`;
+    const codeExistsInCache = await redisClient.exists(redisKey);
     let urlRecord;
     if (codeExistsInCache) {
-      urlRecord = JSON.parse(await redisClient.get(code));
+      urlRecord = JSON.parse(await redisClient.get(redisKey));
     } else {
       urlRecord = await db
         .select({
@@ -35,7 +36,7 @@ export const redirect = async (req, res, next) => {
     if (!urlRecord) {
       throw new NotFoundError("Invalid code");
     }
-    await redisClient.set(code, JSON.stringify(urlRecord));
+    await redisClient.set(redisKey, JSON.stringify(urlRecord));
     if (urlRecord && urlRecord.isDeleted) {
       throw new NotFoundError("Invalid code");
     }

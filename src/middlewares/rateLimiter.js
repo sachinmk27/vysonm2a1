@@ -1,11 +1,15 @@
 import redisClient from "../redis.js";
 import { RateLimitError } from "../utils.js";
 
-export default function ({ requestLimit, timeWindowInSeconds }) {
-  return async function rateLimiterByIP(req, res, next) {
+export default function ({
+  requestLimit = 5,
+  timeWindowInSeconds = 60,
+  redisKeyPrefix,
+  getRedisKey,
+}) {
+  return async function rateLimiter(req, res, next) {
     try {
-      const ip = req.ip;
-      const redisKey = `rate-limit:${ip}`;
+      const redisKey = `${redisKeyPrefix}:${getRedisKey(req)}`;
       if (!redisClient.isOpen) {
         await redisClient.connect();
       }

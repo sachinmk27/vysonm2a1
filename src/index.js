@@ -5,15 +5,15 @@ import db from "./drizzle/index.js";
 import controllers from "./controllers/index.js";
 import verifyApiKey from "./middlewares/verifyApiKey.js";
 import configureVerifyTier from "./middlewares/verifyTier.js";
-import blacklist from "./middlewares/blacklist.js";
 import { tierTable } from "./drizzle/schema.js";
 import { insertUser } from "./drizzle/utils.js";
 import logger from "./middlewares/logger.js";
 import responseTime from "./middlewares/responseTime.js";
 import timingLogWrapper from "./middlewares/timingLogWrapper.js";
 import errorHandler from "./middlewares/errorHandler.js";
-import rateLimiterByIP from "./middlewares/rateLimiterByIP.js";
+import rateLimiter from "./middlewares/rateLimiter.js";
 import winstonLogger from "./logger.js";
+import { TIERS } from "./constants.js";
 
 const app = express();
 
@@ -31,7 +31,18 @@ app.use(timingLogWrapper(logger));
 app.use(timingLogWrapper(express.json()));
 app.use(timingLogWrapper(cors()));
 app.use(timingLogWrapper(responseTime));
-
+if (process.env.NODE_ENV !== "test") {
+  app.use(
+    timingLogWrapper(
+      rateLimiter({
+        requestLimit: 100,
+        timeWindowInSeconds: 60,
+        redisKeyPrefix: `rateLimit:ip`,
+        getRedisKey: (req) => req.ip,
+      })
+    )
+  );
+}
 app.get("/ping", async (_, res) => {
   try {
     await db.select(1);
@@ -42,15 +53,36 @@ app.get("/ping", async (_, res) => {
   }
 });
 
-app.get(
-  "/redirect",
-  rateLimiterByIP({ limit: 100, window: 60 }),
-  controllers.redirect
-);
+if (process.env.NODE_ENV !== "test") {
+  app.use(
+    "/redirect",
+    timingLogWrapper(
+      rateLimiter({
+        requestLimit: 50,
+        timeWindowInSeconds: 1,
+        redisKeyPrefix: `rateLimit:apiKey:redirect`,
+        getRedisKey: (req) => req.headers["x-api-key"],
+      })
+    )
+  );
+}
+app.get("/redirect", controllers.redirect);
 
-app.use(timingLogWrapper(blacklist));
 app.use(timingLogWrapper(verifyApiKey));
 
+if (process.env.NODE_ENV !== "test") {
+  app.use(
+    "/shorten",
+    timingLogWrapper(
+      rateLimiter({
+        requestLimit: 10,
+        timeWindowInSeconds: 1,
+        redisKeyPrefix: `rateLimit:apiKey:shorten`,
+        getRedisKey: (req) => req.headers["x-api-key"],
+      })
+    )
+  );
+}
 app.post("/shorten", controllers.shorten);
 app.delete("/shorten/:code?", controllers.deleteCode);
 app.patch("/shorten/:code?", controllers.editCode);
@@ -67,16 +99,22 @@ Sentry.setupExpressErrorHandler(app);
 app.use(errorHandler);
 
 export async function initializeDatabase() {
-  await db
+  const tiers = await db
     .insert(tierTable)
     .values([
-      { name: "hobby", id: 1 },
-      { name: "enterprise", id: 2 },
+      { name: TIERS.HOBBY },
+      { name: TIERS.ENTERPRISE },
+      { name: TIERS.FREE },
     ])
-    .onConflictDoNothing();
-  await insertUser("abc@example.com", 1);
-  await insertUser("xyz@example.com", 1);
-  await insertUser("pqr@example.com", 1);
+    .onConflictDoNothing()
+    .returning({ id: tierTable.id, name: tierTable.name });
+  const tiersMap = tiers.reduce((acc, tier) => {
+    acc[tier.name] = tier.id;
+    return acc;
+  }, {});
+  await insertUser("abc@example.com", tiersMap[TIERS.HOBBY]);
+  await insertUser("xyz@example.com", tiersMap[TIERS.ENTERPRISE]);
+  await insertUser("pqr@example.com", tiersMap[TIERS.FREE]);
 }
 
 async function startServer() {

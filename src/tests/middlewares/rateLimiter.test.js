@@ -1,6 +1,6 @@
 import redisClient from "../../redis.js";
-import rateLimiterByIP from "../../middlewares/rateLimiterByIP.js";
-import { RateLimitError } from "../../utils";
+import rateLimiter from "../../middlewares/rateLimiter.js";
+import { RateLimitError } from "../../utils.js";
 
 describe("rateLimitByIP middleware", () => {
   let req;
@@ -24,9 +24,10 @@ describe("rateLimitByIP middleware", () => {
   it("should respond with 429 for rate limited IP", async () => {
     req.ip = "1.1.1.1";
     jest.spyOn(redisClient, "incr").mockResolvedValue(2);
-    const middleware = rateLimiterByIP({
+    const middleware = rateLimiter({
       requestLimit: 1,
-      timeWindowInSeconds: 1,
+      timeWindowInSeconds: 60,
+      getRedisKey: (req) => req.ip,
     });
     await middleware(req, res, next);
 
@@ -41,17 +42,21 @@ describe("rateLimitByIP middleware", () => {
     jest.spyOn(redisClient, "incr").mockResolvedValue(1);
     const rateLimitConfig = {
       requestLimit: 100,
-      timeWindowInSeconds: 10,
+      timeWindowInSeconds: 60,
+      redisKeyPrefix: "rate-limit:ip",
+      getRedisKey: (req) => req.ip,
     };
-    const middleware = rateLimiterByIP(rateLimitConfig);
+    const middleware = rateLimiter(rateLimitConfig);
 
     await middleware(req, res, next);
 
     expect(next).toHaveBeenCalled();
     expect(next).toHaveBeenCalledWith();
-    expect(redisClient.incr).toHaveBeenCalledWith(`rate-limit:${req.ip}`);
+    expect(redisClient.incr).toHaveBeenCalledWith(
+      `${rateLimitConfig.redisKeyPrefix}:${req.ip}`
+    );
     expect(redisClient.expire).toHaveBeenCalledWith(
-      `rate-limit:${req.ip}`,
+      `${rateLimitConfig.redisKeyPrefix}:${req.ip}`,
       rateLimitConfig.timeWindowInSeconds
     );
   });
