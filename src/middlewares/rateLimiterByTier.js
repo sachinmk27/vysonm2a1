@@ -24,6 +24,9 @@ export default function ({
       if (requestsCount > requestLimit) {
         throw new RateLimitError("Rate limit exceeded");
       }
+      res.set("X-RateLimit-Limit", requestLimit);
+      res.set("X-RateLimit-Remaining", requestLimit - requestsCount);
+      res.set("X-RateLimit-Reset", Date.now() + timeWindowInSeconds * 1000);
       next();
     } catch (err) {
       next(err);

@@ -17,6 +17,7 @@ describe("rateLimitByIP middleware", () => {
       },
     };
     res = {
+      set: jest.fn(),
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
     };
@@ -24,6 +25,7 @@ describe("rateLimitByIP middleware", () => {
 
     redisClient.incr = jest.fn();
     redisClient.expire = jest.fn();
+    redisClient.connect = jest.fn();
     jest.clearAllMocks();
   });
 
@@ -50,6 +52,7 @@ describe("rateLimitByIP middleware", () => {
   });
   it("should call next middleware for non rate limited API key", async () => {
     jest.spyOn(redisClient, "incr").mockResolvedValue(1);
+    jest.spyOn(Date, "now").mockReturnValue(0);
     const rateLimitConfig = {
       tier: TIERS.FREE,
       requestLimit: 1,
@@ -66,6 +69,18 @@ describe("rateLimitByIP middleware", () => {
     );
     expect(next).toHaveBeenCalled();
     expect(next).toHaveBeenCalledWith();
+    expect(res.set).toHaveBeenCalledWith(
+      "X-RateLimit-Limit",
+      rateLimitConfig.requestLimit
+    );
+    expect(res.set).toHaveBeenCalledWith(
+      "X-RateLimit-Remaining",
+      rateLimitConfig.requestLimit - 1
+    );
+    expect(res.set).toHaveBeenCalledWith(
+      "X-RateLimit-Reset",
+      Date.now() + rateLimitConfig.timeWindowInSeconds * 1000
+    );
   });
 
   it("should call next() for other tiers", async () => {
