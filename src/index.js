@@ -86,9 +86,26 @@ if (process.env.NODE_ENV !== "test") {
   app.use(
     "/shorten",
     timingLogWrapper(
+      // Leaky bucket rate limiter
+      // rateLimiter({
+      //   capacity: 60,
+      //   leakRate: 1,
+      //   redisKeyPrefix: `rateLimit:apiKey:shorten`,
+      //   getRedisKey: (req) => req.headers["x-api-key"],
+      // })
+
+      // Token bucket rate limiter
+      // rateLimiter({
+      //   maxBucketSize: 20,
+      //   interval: 60,
+      //   refillRate: 60,
+      //   redisKeyPrefix: `rateLimit:apiKey:shorten`,
+      //   getRedisKey: (req) => req.headers["x-api-key"],
+      // })
+
       rateLimiter({
         requestLimit: 10,
-        timeWindowInSeconds: 1,
+        timeWindowInSeconds: 60,
         redisKeyPrefix: `rateLimit:apiKey:shorten`,
         getRedisKey: (req) => req.headers["x-api-key"],
       })
