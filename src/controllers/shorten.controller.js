@@ -9,6 +9,7 @@ import {
   InternalServerError,
   isURLValid,
   NotFoundError,
+  withRetry,
 } from "../utils.js";
 import redisClient from "../redis.js";
 
@@ -36,19 +37,21 @@ async function insertUrlRecord({
     const accessPassword = password
       ? await bcrypt.hash(password, 10)
       : undefined;
-    const urlRecord = await db
-      .insert(urlTable)
-      .values({
-        originalUrl: url,
-        shortCode,
-        userId,
-        expiryDate,
-        accessPassword,
-      })
-      .returning({
-        shortCode: urlTable.shortCode,
-        expiryDate: urlTable.expiryDate,
-      });
+    const urlRecord = await withRetry(() =>
+      db
+        .insert(urlTable)
+        .values({
+          originalUrl: url,
+          shortCode,
+          userId,
+          expiryDate,
+          accessPassword,
+        })
+        .returning({
+          shortCode: urlTable.shortCode,
+          expiryDate: urlTable.expiryDate,
+        })
+    );
     return urlRecord[0];
   } catch (err) {
     if (err instanceof BadRequestError || err instanceof ConflictError) {
@@ -99,10 +102,12 @@ export const deleteCode = async (req, res, next) => {
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
-    await db
-      .update(urlTable)
-      .set({ isDeleted: 1 })
-      .where(eq(urlTable.id, urlRecord.id));
+    await withRetry(() =>
+      db
+        .update(urlTable)
+        .set({ isDeleted: 1 })
+        .where(eq(urlTable.id, urlRecord.id))
+    );
     await redisClient.set(
       redisKey,
       JSON.stringify({ ...urlRecord, isDeleted: 1 })
@@ -146,19 +151,21 @@ async function getUrlRecordByUserId(code, userId) {
   if (!code) {
     throw new BadRequestError("Invalid code");
   }
-  const urlRecord = await db
-    .select({
-      id: urlTable.id,
-      originalUrl: urlTable.originalUrl,
-      visitCount: urlTable.visitCount,
-      expiryDate: urlTable.expiryDate,
-      accessPassword: urlTable.accessPassword,
-      isDeleted: urlTable.isDeleted,
-    })
-    .from(urlTable)
-    .innerJoin(userTable, eq(urlTable.userId, userTable.id))
-    .where(and(eq(urlTable.shortCode, code), eq(urlTable.userId, userId)))
-    .get();
+  const urlRecord = await withRetry(() =>
+    db
+      .select({
+        id: urlTable.id,
+        originalUrl: urlTable.originalUrl,
+        visitCount: urlTable.visitCount,
+        expiryDate: urlTable.expiryDate,
+        accessPassword: urlTable.accessPassword,
+        isDeleted: urlTable.isDeleted,
+      })
+      .from(urlTable)
+      .innerJoin(userTable, eq(urlTable.userId, userTable.id))
+      .where(and(eq(urlTable.shortCode, code), eq(urlTable.userId, userId)))
+      .get()
+  );
   return urlRecord;
 }
 
@@ -199,18 +206,20 @@ export const editCode = async (req, res, next) => {
     if (expiryDate) modifiedFields.expiryDate = expiryDate;
     if (accessPassword) modifiedFields.accessPassword = hashedPassword;
     if (url) modifiedFields.originalUrl = url;
-    const updatedUrlRecord = await db
-      .update(urlTable)
-      .set(modifiedFields)
-      .where(eq(urlTable.id, urlRecord.id))
-      .returning({
-        id: urlTable.id,
-        originalUrl: urlTable.originalUrl,
-        visitCount: urlTable.visitCount,
-        expiryDate: urlTable.expiryDate,
-        accessPassword: urlTable.accessPassword,
-        isDeleted: urlTable.isDeleted,
-      });
+    const updatedUrlRecord = await withRetry(() =>
+      db
+        .update(urlTable)
+        .set(modifiedFields)
+        .where(eq(urlTable.id, urlRecord.id))
+        .returning({
+          id: urlTable.id,
+          originalUrl: urlTable.originalUrl,
+          visitCount: urlTable.visitCount,
+          expiryDate: urlTable.expiryDate,
+          accessPassword: urlTable.accessPassword,
+          isDeleted: urlTable.isDeleted,
+        })
+    );
     await redisClient.set(redisKey, JSON.stringify(updatedUrlRecord[0]));
     return res.json(updatedUrlRecord[0]);
   } catch (err) {
@@ -245,18 +254,20 @@ async function cursorBasedPaginationHandler(req, res, next) {
     } else {
       whereClause = eq(urlTable.userId, userRecord.id);
     }
-    const results = await db
-      .select({
-        shortCode: urlTable.shortCode,
-        originalUrl: urlTable.originalUrl,
-        expiryDate: urlTable.expiryDate,
-        createdAt: urlTable.createdAt,
-        id: urlTable.id,
-      })
-      .from(urlTable)
-      .where(whereClause)
-      .orderBy(desc(urlTable.createdAt), desc(urlTable.id))
-      .limit(pageSize + 1);
+    const results = await withRetry(() =>
+      db
+        .select({
+          shortCode: urlTable.shortCode,
+          originalUrl: urlTable.originalUrl,
+          expiryDate: urlTable.expiryDate,
+          createdAt: urlTable.createdAt,
+          id: urlTable.id,
+        })
+        .from(urlTable)
+        .where(whereClause)
+        .orderBy(desc(urlTable.createdAt), desc(urlTable.id))
+        .limit(pageSize + 1)
+    );
     const hasNextPage = results.length > pageSize;
     const nextCursor = hasNextPage
       ? encodeCursor({
@@ -290,19 +301,21 @@ async function offsetBasedPaginationHandler(req, res, next) {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    const urlRecords = await db
-      .select({
-        shortCode: urlTable.shortCode,
-        originalUrl: urlTable.originalUrl,
-        expiryDate: urlTable.expiryDate,
-      })
-      .from(urlTable)
-      .where(eq(urlTable.userId, userRecord.id))
-      .orderBy(asc(urlTable.id))
-      .offset(offset)
-      .limit(pageSize);
+    const urlRecords = await withRetry(() =>
+      db
+        .select({
+          shortCode: urlTable.shortCode,
+          originalUrl: urlTable.originalUrl,
+          expiryDate: urlTable.expiryDate,
+        })
+        .from(urlTable)
+        .where(eq(urlTable.userId, userRecord.id))
+        .orderBy(asc(urlTable.id))
+        .offset(offset)
+        .limit(pageSize)
+    );
     res.json(urlRecords);
   } catch (err) {
     next(err);
   }
-};
+}

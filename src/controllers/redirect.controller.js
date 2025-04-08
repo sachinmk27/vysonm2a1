@@ -3,7 +3,12 @@ import bcrypt from "bcrypt";
 import db from "../drizzle/index.js";
 import { urlTable } from "../drizzle/schema.js";
 import redisClient from "../redis.js";
-import { BadRequestError, NotFoundError, UnauthorizedError } from "../utils.js";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+  withRetry,
+} from "../utils.js";
 
 export const redirect = async (req, res, next) => {
   try {
@@ -20,18 +25,20 @@ export const redirect = async (req, res, next) => {
     if (codeExistsInCache) {
       urlRecord = JSON.parse(await redisClient.get(redisKey));
     } else {
-      urlRecord = await db
-        .select({
-          id: urlTable.id,
-          originalUrl: urlTable.originalUrl,
-          visitCount: urlTable.visitCount,
-          expiryDate: urlTable.expiryDate,
-          accessPassword: urlTable.accessPassword,
-          isDeleted: urlTable.isDeleted,
-        })
-        .from(urlTable)
-        .where(eq(urlTable.shortCode, code))
-        .get();
+      urlRecord = await withRetry(async () => {
+        return await db
+          .select({
+            id: urlTable.id,
+            originalUrl: urlTable.originalUrl,
+            visitCount: urlTable.visitCount,
+            expiryDate: urlTable.expiryDate,
+            accessPassword: urlTable.accessPassword,
+            isDeleted: urlTable.isDeleted,
+          })
+          .from(urlTable)
+          .where(eq(urlTable.shortCode, code))
+          .get();
+      });
     }
     if (!urlRecord) {
       throw new NotFoundError("Invalid code");
