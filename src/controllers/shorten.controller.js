@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, lt, or } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import db from "../drizzle/index.js";
 import { urlTable, userTable } from "../drizzle/schema.js";
@@ -219,6 +219,72 @@ export const editCode = async (req, res, next) => {
 };
 
 export const getCodes = async (req, res, next) => {
+  process.env.FF_CURSOR_PAGINATION_BULK_GET_SHORTEN_ENDPOINT === "enabled"
+    ? cursorBasedPaginationHandler(req, res, next)
+    : offsetBasedPaginationHandler(req, res, next);
+};
+
+async function cursorBasedPaginationHandler(req, res, next) {
+  const { limit, cursor: rawCursor } = req.query;
+  const { userRecord } = req;
+  const pageSize = parseInt(limit) || 10;
+  const cursor = rawCursor ? decodeCursor(rawCursor) : null;
+  try {
+    let whereClause;
+    if (cursor) {
+      whereClause = and(
+        eq(urlTable.userId, userRecord.id),
+        or(
+          lt(urlTable.createdAt, cursor.createdAt),
+          and(
+            eq(urlTable.createdAt, cursor.createdAt),
+            lt(urlTable.id, cursor.id)
+          )
+        )
+      );
+    } else {
+      whereClause = eq(urlTable.userId, userRecord.id);
+    }
+    const results = await db
+      .select({
+        shortCode: urlTable.shortCode,
+        originalUrl: urlTable.originalUrl,
+        expiryDate: urlTable.expiryDate,
+        createdAt: urlTable.createdAt,
+        id: urlTable.id,
+      })
+      .from(urlTable)
+      .where(whereClause)
+      .orderBy(desc(urlTable.createdAt), desc(urlTable.id))
+      .limit(pageSize + 1);
+    const hasNextPage = results.length > pageSize;
+    const nextCursor = hasNextPage
+      ? encodeCursor({
+          createdAt: results[pageSize - 1].createdAt,
+          id: results[pageSize - 1].id,
+        })
+      : null;
+    res.json({
+      results: results.slice(0, pageSize),
+      nextCursor,
+      hasNextPage,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+function encodeCursor(cursor) {
+  return Buffer.from(JSON.stringify(cursor)).toString("base64");
+}
+function decodeCursor(cursorStr) {
+  try {
+    return JSON.parse(Buffer.from(cursorStr, "base64").toString());
+  } catch (e) {
+    return null; // fallback in case of bad input
+  }
+}
+
+async function offsetBasedPaginationHandler(req, res, next) {
   try {
     const { userRecord } = req;
     const page = parseInt(req.query.page) || 1;
