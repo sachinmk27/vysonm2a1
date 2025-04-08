@@ -7,7 +7,7 @@ import {
   BadRequestError,
   NotFoundError,
   UnauthorizedError,
-  withRetry,
+  withCircuitBreaker,
 } from "../utils.js";
 
 export const redirect = async (req, res, next) => {
@@ -25,7 +25,7 @@ export const redirect = async (req, res, next) => {
     if (codeExistsInCache) {
       urlRecord = JSON.parse(await redisClient.get(redisKey));
     } else {
-      urlRecord = await withRetry(async () => {
+      urlRecord = await withCircuitBreaker(async () => {
         return await db
           .select({
             id: urlTable.id,

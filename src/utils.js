@@ -87,6 +87,14 @@ export class MaxRetiresReachedError extends Error {
   }
 }
 
+export class CiruitBreakerError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "CircuitBreakerError";
+    this.status = 503;
+  }
+}
+
 export class RateLimitError extends Error {
   constructor(message) {
     super(message);
@@ -101,35 +109,66 @@ function wait(milliseconds) {
   });
 }
 
+const SQLITE_RECOVERABLE_ERRORS = new Set([
+  "SQLITE_BUSY",
+  "SQLITE_LOCKED",
+  "SQLITE_PROTOCOL",
+  "SQLITE_IOERR",
+  "SQLITE_CANTOPEN",
+]);
+
 export async function withRetry(fn, maxRetries = 3, baseDelay = 1000) {
-  const SQLITE_RECOVERABLE_ERRORS = new Set([
-    "SQLITE_BUSY",
-    "SQLITE_LOCKED",
-    "SQLITE_PROTOCOL",
-    "SQLITE_IOERR",
-    "SQLITE_CANTOPEN",
-  ]);
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       const isRecoverable = SQLITE_RECOVERABLE_ERRORS.has(error.code);
-      if (!isRecoverable) {
+      if (!isRecoverable || attempt === maxRetries) {
         throw error;
-      }
-      if (attempt === maxRetries) {
-        throw new MaxRetiresReachedError(
-          `Max retries reached: ${error.message}`
-        );
       }
       const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff
       const jitter = Math.random() * 250;
-      logger.warn(
+      console.log(
         `Attempt ${attempt + 1} failed: ${error.message}. Retrying in ${
           delay + jitter
         } ms`
       );
       await wait(delay + jitter);
     }
+  }
+}
+
+const circuit = {
+  failures: 0,
+  state: "CLOSED",
+  nextTry: Date.now(),
+};
+
+export async function withCircuitBreaker(fn, maxFailures = 3, timeout = 10000) {
+  if (circuit.state === "OPEN") {
+    if (Date.now() > circuit.nextTry) {
+      circuit.state = "HALF_OPEN";
+    } else {
+      throw new CiruitBreakerError("Service not available");
+    }
+  }
+  try {
+    const result = await withRetry(fn);
+    if (circuit.state === "HALF_OPEN") {
+      circuit.state = "CLOSED";
+      circuit.failures = 0;
+    }
+    return result;
+  } catch (error) {
+    const isRecoverable = SQLITE_RECOVERABLE_ERRORS.has(error.code);
+    if (isRecoverable) {
+      circuit.failures += 1;
+      if (circuit.failures >= maxFailures) {
+        circuit.state = "OPEN";
+        circuit.nextTry = Date.now() + timeout;
+        console.log("Circuit opened due to repeated failures.");
+      }
+    }
+    throw error;
   }
 }

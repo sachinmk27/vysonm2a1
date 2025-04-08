@@ -5,11 +5,12 @@ import db from "../drizzle/index.js";
 import { urlTable, userTable } from "../drizzle/schema.js";
 import {
   BadRequestError,
+  CiruitBreakerError,
   ConflictError,
   InternalServerError,
   isURLValid,
   NotFoundError,
-  withRetry,
+  withCircuitBreaker,
 } from "../utils.js";
 import redisClient from "../redis.js";
 
@@ -37,8 +38,8 @@ async function insertUrlRecord({
     const accessPassword = password
       ? await bcrypt.hash(password, 10)
       : undefined;
-    const urlRecord = await withRetry(() =>
-      db
+    const urlRecord = await withCircuitBreaker(() => {
+      return db
         .insert(urlTable)
         .values({
           originalUrl: url,
@@ -50,11 +51,15 @@ async function insertUrlRecord({
         .returning({
           shortCode: urlTable.shortCode,
           expiryDate: urlTable.expiryDate,
-        })
-    );
+        });
+    });
     return urlRecord[0];
   } catch (err) {
-    if (err instanceof BadRequestError || err instanceof ConflictError) {
+    if (
+      err instanceof BadRequestError ||
+      err instanceof ConflictError ||
+      err instanceof CiruitBreakerError
+    ) {
       throw err;
     }
     if (
@@ -102,7 +107,7 @@ export const deleteCode = async (req, res, next) => {
     if (!urlRecord) {
       throw new NotFoundError("Not Found");
     }
-    await withRetry(() =>
+    await withCircuitBreaker(() =>
       db
         .update(urlTable)
         .set({ isDeleted: 1 })
@@ -151,7 +156,7 @@ async function getUrlRecordByUserId(code, userId) {
   if (!code) {
     throw new BadRequestError("Invalid code");
   }
-  const urlRecord = await withRetry(() =>
+  const urlRecord = await withCircuitBreaker(() =>
     db
       .select({
         id: urlTable.id,
@@ -206,7 +211,7 @@ export const editCode = async (req, res, next) => {
     if (expiryDate) modifiedFields.expiryDate = expiryDate;
     if (accessPassword) modifiedFields.accessPassword = hashedPassword;
     if (url) modifiedFields.originalUrl = url;
-    const updatedUrlRecord = await withRetry(() =>
+    const updatedUrlRecord = await withCircuitBreaker(() =>
       db
         .update(urlTable)
         .set(modifiedFields)
@@ -254,7 +259,7 @@ async function cursorBasedPaginationHandler(req, res, next) {
     } else {
       whereClause = eq(urlTable.userId, userRecord.id);
     }
-    const results = await withRetry(() =>
+    const results = await withCircuitBreaker(() =>
       db
         .select({
           shortCode: urlTable.shortCode,
@@ -301,7 +306,7 @@ async function offsetBasedPaginationHandler(req, res, next) {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    const urlRecords = await withRetry(() =>
+    const urlRecords = await withCircuitBreaker(() =>
       db
         .select({
           shortCode: urlTable.shortCode,
