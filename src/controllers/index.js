@@ -7,6 +7,7 @@ import {
 } from "./shorten.controller.js";
 import { redirect } from "./redirect.controller.js";
 import { uploadProfilePicture } from "./user.controller.js";
+import { addTaskToQueue } from "./queue.controller.js";
 
 export default {
   shorten,
@@ -16,4 +17,5 @@ export default {
   redirect,
   getCodes,
   uploadProfilePicture,
+  addTaskToQueue,
 };

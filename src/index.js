@@ -15,6 +15,7 @@ import rateLimiter from "./middlewares/rateLimiter.js";
 import winstonLogger from "./logger.js";
 import { TIERS } from "./constants.js";
 import rateLimiterByTier from "./middlewares/rateLimiterByTier.js";
+import "./backgroundTasks/index.js"; // Import background tasks to start them
 
 const app = express();
 
@@ -32,6 +33,9 @@ app.use(timingLogWrapper(logger));
 app.use(timingLogWrapper(express.json()));
 app.use(timingLogWrapper(cors()));
 app.use(timingLogWrapper(responseTime));
+
+app.post("/enqueue", controllers.addTaskToQueue);
+
 if (process.env.NODE_ENV !== "test") {
   app.use(
     timingLogWrapper(

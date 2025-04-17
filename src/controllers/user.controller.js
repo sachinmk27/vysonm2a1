@@ -4,6 +4,7 @@ import { BadRequestError } from "../utils.js";
 import { userTable } from "../drizzle/schema.js";
 import { eq } from "drizzle-orm";
 import fs from "fs";
+import { GENERATE_USER_THUMBNAIL_TASK } from "../backgroundTasks/generateUserThumbnails.js";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -19,6 +20,21 @@ let storage = multer.diskStorage({
     cb(null, uniquePrefix + "-" + file.originalname);
   },
 });
+
+const addThumbnailTaskToQueue = async (userId) => {
+  fetch("http://localhost:3000/enqueue", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      task: GENERATE_USER_THUMBNAIL_TASK,
+      params: {
+        userId: userId,
+      },
+    }),
+  });
+};
 
 const upload = multer({
   storage,
@@ -37,6 +53,7 @@ export const uploadProfilePicture = [
         .update(userTable)
         .set({ picture: req.file.filename, thumbnail: null })
         .where(eq(userTable.id, userRecord.id));
+      addThumbnailTaskToQueue(userRecord.id);
       return res.status(200).send("File uploaded successfully");
     } catch (error) {
       next(error);
