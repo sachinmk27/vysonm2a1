@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import * as Sentry from "@sentry/node";
+// import * as Sentry from "@sentry/node";
 import db from "./drizzle/index.js";
 import controllers from "./controllers/index.js";
 import verifyApiKey from "./middlewares/verifyApiKey.js";
@@ -43,17 +43,6 @@ if (process.env.NODE_ENV !== "test") {
       })
     )
   );
-  app.use(
-    timingLogWrapper(
-      rateLimiterByTier({
-        tier: TIERS.FREE,
-        requestLimit: 5,
-        timeWindowInSeconds: 60,
-        redisKeyPrefix: `rateLimit:tier`,
-        getRedisKey: (req) => req.headers["x-api-key"],
-      })
-    )
-  );
 }
 app.get("/ping", async (_, res) => {
   try {
@@ -81,6 +70,20 @@ if (process.env.NODE_ENV !== "test") {
 app.get("/redirect", controllers.redirect);
 
 app.use(timingLogWrapper(verifyApiKey));
+if (process.env.NODE_ENV !== "test") {
+  app.use(
+    timingLogWrapper(
+      rateLimiterByTier({
+        tier: TIERS.FREE,
+        requestLimit: 5,
+        timeWindowInSeconds: 60,
+        redisKeyPrefix: `rateLimit:tier`,
+        getRedisKey: (req) => req.headers["x-api-key"],
+      })
+    )
+  );
+}
+app.patch("/user/profile-picture", controllers.uploadProfilePicture);
 
 if (process.env.NODE_ENV !== "test") {
   app.use(
@@ -124,7 +127,7 @@ app.get("/debug-sentry", function mainHandler(req, res) {
   throw new Error("My first Sentry error!");
 });
 
-Sentry.setupExpressErrorHandler(app);
+// Sentry.setupExpressErrorHandler(app);
 app.use(errorHandler);
 
 export async function initializeDatabase() {

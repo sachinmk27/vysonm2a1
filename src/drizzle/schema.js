@@ -44,6 +44,8 @@ export const userTable = sqliteTable("user", {
       onDelete: "set default",
     })
     .default(1),
+  picture: text("picture"),
+  thumbnail: text("thumbnail"),
 });
 
 export const tierTable = sqliteTable("tier", {

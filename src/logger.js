@@ -1,6 +1,6 @@
 import winston from "winston";
 import path from "path";
-import Sentry from "winston-transport-sentry-node";
+// import Sentry from "winston-transport-sentry-node";
 
 const { combine, timestamp, json, printf, prettyPrint } = winston.format;
 
@@ -14,7 +14,7 @@ const logger = winston.createLogger({
     )
   ),
   transports: [
-    // new winston.transports.Console(),
+    new winston.transports.Console(),
     new winston.transports.File({
       filename: path.join(import.meta.dirname, "./../logs/access.log"),
     }),
@@ -22,10 +22,10 @@ const logger = winston.createLogger({
       filename: path.join(import.meta.dirname, "./../logs/error.log"),
       level: "error",
     }),
-    new Sentry({
-      sentry: { dsn: process.env.SENTRY_DSN },
-      level: "error",
-    }),
+    // new Sentry({
+    //   sentry: { dsn: process.env.SENTRY_DSN },
+    //   level: "error",
+    // }),
   ],
 });
 

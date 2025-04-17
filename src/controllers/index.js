@@ -6,6 +6,7 @@ import {
   getCodes,
 } from "./shorten.controller.js";
 import { redirect } from "./redirect.controller.js";
+import { uploadProfilePicture } from "./user.controller.js";
 
 export default {
   shorten,
@@ -14,4 +15,5 @@ export default {
   batchShorten,
   redirect,
   getCodes,
+  uploadProfilePicture,
 };
