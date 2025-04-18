@@ -9,6 +9,7 @@ import {
   UnauthorizedError,
   withCircuitBreaker,
 } from "../utils.js";
+import { UPDATE_URL_ANALYTICS_TASK } from "../backgroundTasks/updateUrlAnalytics.js";
 
 export const redirect = async (req, res, next) => {
   try {
@@ -69,13 +70,10 @@ export const redirect = async (req, res, next) => {
     ) {
       throw new NotFoundError("Code has expired");
     }
-    // await db
-    //   .update(urlTable)
-    //   .set({
-    //     visitCount: urlRecord.visitCount + 1,
-    //     lastAccessedAt: sql`CURRENT_TIMESTAMP`,
-    //   })
-    //   .where(eq(urlTable.shortCode, code));
+    addUrlAnalyticsTaskToQueue({
+      urlId: urlRecord.id,
+      lastAccessed: Date.now(),
+    });
 
     res
       .append("Cache-Control", "private, max-age=3600")
@@ -84,3 +82,19 @@ export const redirect = async (req, res, next) => {
     next(err);
   }
 };
+
+function addUrlAnalyticsTaskToQueue({ urlId, lastAccessed }) {
+  fetch("http://localhost:3000/enqueue", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      task: UPDATE_URL_ANALYTICS_TASK,
+      params: {
+        urlId,
+        lastAccessed,
+      },
+    }),
+  });
+}

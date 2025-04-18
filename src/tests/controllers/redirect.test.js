@@ -4,6 +4,8 @@ import app from "../../index.js";
 import db from "../../drizzle/index.js";
 import { urlTable, userTable } from "../../drizzle/schema.js";
 import * as MOCKS from "../mocks.js";
+import Queue from "../../backgroundTasks/queue.js";
+import { UPDATE_URL_ANALYTICS_TASK } from "../../backgroundTasks/updateUrlAnalytics.js";
 
 beforeAll(async () => {
   await db
@@ -55,28 +57,29 @@ describe("GET /redirect", () => {
         expect(res.status).toBe(400);
       });
   });
-  it.skip("should increment visit count and update lastAccessedAt", async () => {
-    const initialRecord = await db
-      .select({
-        visitCount: urlTable.visitCount,
-        lastAccessedAt: urlTable.lastAccessedAt,
-      })
+  it("should add a task to the updateUrlAnalytics queue", async () => {
+    jest.spyOn(Date, "now").mockReturnValue(1000);
+    jest.mock("node-fetch");
+    fetch = jest.fn(() => {});
+    const urlRecord = await db
+      .select()
       .from(urlTable)
       .where(eq(urlTable.shortCode, shortCode))
       .get();
     const res = await request(app).get("/redirect").query({ code: shortCode });
-    const redirectUrl = res.headers.location;
-    expect(res.status).toBe(302);
-    expect(redirectUrl).toBe(MOCKS.SAMPLE_URL_A);
-    const updatedRecord = await db
-      .select({
-        visitCount: urlTable.visitCount,
-        lastAccessedAt: urlTable.lastAccessedAt,
-      })
-      .from(urlTable)
-      .where(eq(urlTable.shortCode, shortCode))
-      .get();
-    expect(updatedRecord.visitCount).toBe(initialRecord.visitCount + 1);
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/enqueue", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        task: UPDATE_URL_ANALYTICS_TASK,
+        params: {
+          urlId: urlRecord.id,
+          lastAccessed: 1000,
+        },
+      }),
+    });
   });
   it("should return 404 if the URL has expired", () => {
     return request(app)
