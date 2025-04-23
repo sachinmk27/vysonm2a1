@@ -41,8 +41,31 @@ describe("Queue", () => {
     Queue.enqueue(MOCK_QUEUE_NAME, { params: ITEM_2.params });
     await new Promise((resolve) => setTimeout(resolve, 1500));
     expect(mockQueueHandler).toHaveBeenCalled();
-    expect(mockQueueHandler).toHaveBeenCalledWith([{ params: ITEM_1.params }]);
+    expect(mockQueueHandler).toHaveBeenCalledWith(
+      [{ params: ITEM_1.params }],
+      0
+    );
     expect(Queue.size(MOCK_QUEUE_NAME)).toBe(1);
+  });
+  it("should process multiple items from queue at the configured time interval", async () => {
+    const mockQueueHandler = jest.fn();
+    Queue.registerQueue("testQueue2", {
+      handler: mockQueueHandler,
+      timeInterval: 1000,
+      workers: 2,
+    });
+    Queue.enqueue("testQueue2", { params: ITEM_1.params });
+    Queue.enqueue("testQueue2", { params: ITEM_2.params });
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(mockQueueHandler).toHaveBeenCalledTimes(2);
+    expect(mockQueueHandler).toHaveBeenCalledWith(
+      [{ params: ITEM_1.params }],
+      0
+    );
+    expect(mockQueueHandler).toHaveBeenCalledWith(
+      [{ params: ITEM_2.params }],
+      1
+    );
   });
 });
 

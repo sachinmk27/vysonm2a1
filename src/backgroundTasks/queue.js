@@ -1,3 +1,4 @@
+import logger from "../logger.js";
 const queues = {};
 
 export class QueueError extends Error {
@@ -34,16 +35,23 @@ function registerQueue(name, config = {}) {
   queues[name] = {
     data: [],
     config,
-    timer: null,
+    timers: [],
   };
 
   if (config.timeInterval && typeof config.handler === "function") {
-    queues[name].timer = setInterval(() => {
-      if (queues[name].data.length > 0) {
-        const task = queues[name].data.shift();
-        config.handler([task]);
-      }
-    }, config.timeInterval);
+    const workers = config.workers || 1;
+    for (let i = 0; i < workers; i++) {
+      queues[name].timers.push(
+        setInterval(() => {
+          logger.info(queues[name].data.length);
+          if (queues[name].data.length > 0) {
+            const task = dequeue(name);
+            logger.info(`Starting worker ${i} for queue ${name}`, task);
+            config.handler([task], i);
+          }
+        }, config.timeInterval)
+      );
+    }
   }
 }
 
@@ -58,8 +66,11 @@ function enqueue(queueName, item) {
   // For count-based batching
   const { data, config } = queue;
   if (config.batchSize && data.length >= config.batchSize) {
-    const batch = data.splice(0, config.batchSize);
-    config.handler(batch);
+    for (let i = 0; i < config.workers; i++) {
+      const batch = data.splice(0, config.batchSize);
+      logger.info(`Starting worker ${i} for queue ${queueName}`);
+      config.handler(batch, i);
+    }
   }
 }
 
@@ -75,10 +86,10 @@ function getQueueData(queueName) {
 
 function stopAll() {
   for (const key in queues) {
-    if (queues[key].timer) {
-      clearInterval(queues[key].timer);
-      delete queues[key];
+    if (queues[key].timers.length) {
+      queues[key].timers.forEach((timer) => clearInterval(timer));
     }
+    delete queues[key];
   }
 }
 

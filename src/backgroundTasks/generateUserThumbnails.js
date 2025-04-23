@@ -4,9 +4,9 @@ import db from "../drizzle/index.js";
 import { userTable } from "../drizzle/schema.js";
 import logger from "../logger.js";
 
-export const generateUserThumbnails = async (batch) => {
+export const generateUserThumbnails = async (batch, workerId) => {
   try {
-    logger.info("Generating user thumbnails...");
+    logger.info("Generating user thumbnails...", { workerId });
     const basePath = `${import.meta.dirname}/../../${process.env.UPLOADS_DIR}`;
     const userIds = batch.map((task) => task.params.userId);
     const users = await db
@@ -27,7 +27,7 @@ export const generateUserThumbnails = async (batch) => {
         .where(eq(userTable.id, user.id));
     });
     await Promise.all(updatePromises);
-    logger.info("User thumbnails generated successfully.");
+    logger.info("User thumbnails generated successfully.", { workerId });
   } catch (error) {
     logger.error("Error generating user thumbnails:", error);
   }

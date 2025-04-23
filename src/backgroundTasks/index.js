@@ -11,6 +11,7 @@ import {
 Queue.registerQueue(GENERATE_USER_THUMBNAIL_TASK, {
   timeInterval: 1000,
   handler: generateUserThumbnails,
+  // workers: 2,
 });
 
 Queue.registerQueue(UPDATE_URL_ANALYTICS_TASK, {
