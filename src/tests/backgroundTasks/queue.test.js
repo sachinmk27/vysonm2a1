@@ -36,16 +36,13 @@ describe("Queue", () => {
     expect(Queue.size(MOCK_QUEUE_NAME)).toBe(1);
   });
 
-  test("should process queue at the configured time interval", async () => {
+  test("should process single item from queue at the configured time interval", async () => {
     Queue.enqueue(MOCK_QUEUE_NAME, { params: ITEM_1.params });
     Queue.enqueue(MOCK_QUEUE_NAME, { params: ITEM_2.params });
     await new Promise((resolve) => setTimeout(resolve, 1500));
     expect(mockQueueHandler).toHaveBeenCalled();
-    expect(mockQueueHandler).toHaveBeenCalledWith([
-      { params: ITEM_1.params },
-      { params: ITEM_2.params },
-    ]);
-    expect(Queue.size(MOCK_QUEUE_NAME)).toBe(0);
+    expect(mockQueueHandler).toHaveBeenCalledWith([{ params: ITEM_1.params }]);
+    expect(Queue.size(MOCK_QUEUE_NAME)).toBe(1);
   });
 });
 

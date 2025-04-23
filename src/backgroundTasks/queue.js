@@ -40,8 +40,8 @@ function registerQueue(name, config = {}) {
   if (config.timeInterval && typeof config.handler === "function") {
     queues[name].timer = setInterval(() => {
       if (queues[name].data.length > 0) {
-        const batch = queues[name].data.splice(0);
-        config.handler(batch);
+        const task = queues[name].data.shift();
+        config.handler([task]);
       }
     }, config.timeInterval);
   }
