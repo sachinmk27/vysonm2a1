@@ -4,11 +4,11 @@ describe("Queue", () => {
   const MOCK_QUEUE_NAME = "testQueue";
   const mockQueueHandler = jest.fn();
   const mockQueueConfigTimeBased = {
-    handler: mockQueueHandler,
+    subscribers: [mockQueueHandler],
     timeInterval: 1000,
   };
   const mockQueueConfigCountBased = {
-    handler: mockQueueHandler,
+    subscribers: [mockQueueHandler],
     batchSize: 10,
   };
   beforeEach(() => {
@@ -50,7 +50,7 @@ describe("Queue", () => {
   it("should process multiple items from queue at the configured time interval", async () => {
     const mockQueueHandler = jest.fn();
     Queue.registerQueue("testQueue2", {
-      handler: mockQueueHandler,
+      subscribers: [mockQueueHandler],
       timeInterval: 1000,
       workers: 2,
     });
@@ -88,23 +88,16 @@ describe("Queue errors", () => {
   test("should throw if queueName is already registered", () => {
     expect(() => {
       Queue.registerQueue(MOCK_QUEUE_NAME, {
-        handler: mockQueueHandler,
+        subscribers: [mockQueueHandler],
         timeInterval: 1000,
       });
       Queue.registerQueue(MOCK_QUEUE_NAME, {
-        handler: mockQueueHandler,
+        subscribers: [mockQueueHandler],
         timeInterval: 1000,
       });
     }).toThrow(new QueueError(`Queue is already registered`));
   });
 
-  test("should throw if queueName is not registered", () => {
-    expect(() => {
-      Queue.registerQueue(MOCK_QUEUE_NAME, {});
-    }).toThrow(
-      new QueueError(`Queue ${MOCK_QUEUE_NAME} must have a handler function`)
-    );
-  });
   test("should throw if neither batchSize nor timeInterval is passed", () => {
     expect(() => {
       Queue.registerQueue(MOCK_QUEUE_NAME, {

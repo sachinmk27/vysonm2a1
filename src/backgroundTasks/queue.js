@@ -17,10 +17,6 @@ function registerQueue(name, config = {}) {
     throw new QueueError(`Queue is already registered`);
   }
 
-  if (!config.handler) {
-    throw new QueueError(`Queue ${name} must have a handler function`);
-  }
-
   if (!config.batchSize && !config.timeInterval) {
     throw new QueueError(
       `Queue ${name} must have either batchSize or timeInterval`
@@ -38,7 +34,7 @@ function registerQueue(name, config = {}) {
     timers: [],
   };
 
-  if (config.timeInterval && typeof config.handler === "function") {
+  if (config.timeInterval && config.subscribers.length > 0) {
     const workers = config.workers || 1;
     for (let i = 0; i < workers; i++) {
       queues[name].timers.push(
@@ -47,7 +43,9 @@ function registerQueue(name, config = {}) {
           if (queues[name].data.length > 0) {
             const task = dequeue(name);
             logger.info(`Starting worker ${i} for queue ${name}`, task);
-            config.handler([task], i);
+            config.subscribers.forEach((subscriber) => {
+              subscriber([task], i);
+            });
           }
         }, config.timeInterval)
       );
@@ -69,7 +67,9 @@ function enqueue(queueName, item) {
     for (let i = 0; i < config.workers; i++) {
       const batch = data.splice(0, config.batchSize);
       logger.info(`Starting worker ${i} for queue ${queueName}`);
-      config.handler(batch, i);
+      config.subscribers.forEach((subscriber) => {
+        subscriber(batch, i);
+      });
     }
   }
 }

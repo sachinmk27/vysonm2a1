@@ -12,15 +12,11 @@ import { notifyAdmin } from "./notifyAdmin.js";
 
 Queue.registerQueue(IMAGE_UPLOADED_EVENT, {
   timeInterval: 5000,
-  handler: (...args) => {
-    generateUserThumbnails(...args);
-    logUpload(...args);
-    notifyAdmin(...args);
-  },
+  subscribers: [generateUserThumbnails, logUpload, notifyAdmin],
   // workers: 2,
 });
 
 Queue.registerQueue(LOG_ANALYTICS_EVENT, {
   batchSize: 10,
-  handler: updateUrlAnalytics,
+  subscribers: [updateUrlAnalytics],
 });
