@@ -1,20 +1,33 @@
 import Queue from "./queue.js";
 import {
-  GENERATE_USER_THUMBNAIL_TASK,
+  GENERATE_THUMBNAILS_QUEUE,
+  IMAGE_UPLOADED_EVENT,
   generateUserThumbnails,
 } from "./generateUserThumbnails.js";
 import {
-  UPDATE_URL_ANALYTICS_TASK,
+  LOG_ANALYTICS_EVENT,
   updateUrlAnalytics,
 } from "./updateUrlAnalytics.js";
+import { LOG_UPLOAD_QUEUE, logUpload } from "./logUpload.js";
+import { NOTIFY_ADMIN_QUEUE, notifyAdmin } from "./notifyAdmin.js";
 
-Queue.registerQueue(GENERATE_USER_THUMBNAIL_TASK, {
-  timeInterval: 1000,
+Queue.registerQueue(GENERATE_THUMBNAILS_QUEUE, {
+  timeInterval: 5000,
   handler: generateUserThumbnails,
   // workers: 2,
 });
 
-Queue.registerQueue(UPDATE_URL_ANALYTICS_TASK, {
+Queue.registerQueue(LOG_UPLOAD_QUEUE, {
+  timeInterval: 5000,
+  handler: logUpload,
+});
+
+Queue.registerQueue(NOTIFY_ADMIN_QUEUE, {
+  timeInterval: 5000,
+  handler: notifyAdmin,
+});
+
+Queue.registerQueue(LOG_ANALYTICS_EVENT, {
   batchSize: 10,
   handler: updateUrlAnalytics,
 });

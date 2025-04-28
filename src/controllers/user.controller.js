@@ -4,7 +4,7 @@ import { BadRequestError } from "../utils.js";
 import { userTable } from "../drizzle/schema.js";
 import { eq } from "drizzle-orm";
 import fs from "fs";
-import { GENERATE_USER_THUMBNAIL_TASK } from "../backgroundTasks/generateUserThumbnails.js";
+import { IMAGE_UPLOADED_EVENT } from "../backgroundTasks/generateUserThumbnails.js";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -28,7 +28,7 @@ const addThumbnailTaskToQueue = async (userId) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      task: GENERATE_USER_THUMBNAIL_TASK,
+      task: IMAGE_UPLOADED_EVENT,
       params: {
         userId: userId,
       },

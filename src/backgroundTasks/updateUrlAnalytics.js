@@ -3,7 +3,7 @@ import db from "../drizzle/index.js";
 import { urlTable } from "../drizzle/schema.js";
 import { eq, inArray } from "drizzle-orm";
 
-export const UPDATE_URL_ANALYTICS_TASK = "UPDATE_URL_ANALYTICS_TASK";
+export const LOG_ANALYTICS_EVENT = "LOG_ANALYTICS_EVENT";
 
 export const updateUrlAnalytics = async (batch) => {
   try {

@@ -5,7 +5,7 @@ import db from "../../drizzle/index.js";
 import { urlTable, userTable } from "../../drizzle/schema.js";
 import * as MOCKS from "../mocks.js";
 import Queue from "../../backgroundTasks/queue.js";
-import { UPDATE_URL_ANALYTICS_TASK } from "../../backgroundTasks/updateUrlAnalytics.js";
+import { LOG_ANALYTICS_EVENT } from "../../backgroundTasks/updateUrlAnalytics.js";
 
 beforeAll(async () => {
   await db
@@ -73,7 +73,7 @@ describe("GET /redirect", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        task: UPDATE_URL_ANALYTICS_TASK,
+        task: LOG_ANALYTICS_EVENT,
         params: {
           urlId: urlRecord.id,
           lastAccessed: 1000,

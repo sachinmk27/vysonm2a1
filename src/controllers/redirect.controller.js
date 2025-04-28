@@ -9,7 +9,7 @@ import {
   UnauthorizedError,
   withCircuitBreaker,
 } from "../utils.js";
-import { UPDATE_URL_ANALYTICS_TASK } from "../backgroundTasks/updateUrlAnalytics.js";
+import { LOG_ANALYTICS_EVENT } from "../backgroundTasks/updateUrlAnalytics.js";
 
 export const redirect = async (req, res, next) => {
   try {
@@ -90,7 +90,7 @@ function addUrlAnalyticsTaskToQueue({ urlId, lastAccessed }) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      task: UPDATE_URL_ANALYTICS_TASK,
+      task: LOG_ANALYTICS_EVENT,
       params: {
         urlId,
         lastAccessed,

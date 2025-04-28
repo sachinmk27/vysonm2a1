@@ -7,7 +7,7 @@ export default async function logger(req, res, next) {
   const ip = req.ip || req.connection.remoteAddress;
 
   try {
-    winstonLogger.info("", { method, url, userAgent, ip });
+    winstonLogger.debug("", { method, url, userAgent, ip });
   } catch (err) {
     winstonLogger.error("Failed to write log:", err);
   }

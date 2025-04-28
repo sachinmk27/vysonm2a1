@@ -6,7 +6,7 @@ import path from "path";
 import { userTable } from "../../drizzle/schema.js";
 import * as MOCKS from "../mocks.js";
 import * as Queue from "../../backgroundTasks/queue.js";
-import { GENERATE_USER_THUMBNAIL_TASK } from "../../backgroundTasks/generateUserThumbnails.js";
+import { IMAGE_UPLOADED_EVENT } from "../../backgroundTasks/generateUserThumbnails.js";
 
 describe("POST /user/profile-picture", () => {
   let user;
@@ -42,7 +42,7 @@ describe("POST /user/profile-picture", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        task: GENERATE_USER_THUMBNAIL_TASK,
+        task: IMAGE_UPLOADED_EVENT,
         params: {
           userId: user.id,
         },

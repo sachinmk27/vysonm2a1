@@ -33,4 +33,5 @@ export const generateUserThumbnails = async (batch, workerId) => {
   }
 };
 
-export const GENERATE_USER_THUMBNAIL_TASK = "GENERATE_USER_THUMBNAIL_TASK";
+export const IMAGE_UPLOADED_EVENT = "IMAGE_UPLOADED_EVENT";
+export const GENERATE_THUMBNAILS_QUEUE = "GENERATE_THUMBNAILS_QUEUE";
