@@ -30,16 +30,8 @@ describe("POST /queue", () => {
     };
     const response = await request(app).post("/enqueue").send(item);
     expect(response.status).toBe(200);
-    expect(Queue.size(GENERATE_THUMBNAILS_QUEUE)).toBe(1);
-    expect(Queue.size(LOG_UPLOAD_QUEUE)).toBe(1);
-    expect(Queue.size(NOTIFY_ADMIN_QUEUE)).toBe(1);
-    expect(Queue.getQueueData(GENERATE_THUMBNAILS_QUEUE)).toEqual([
-      { params: item.params },
-    ]);
-    expect(Queue.getQueueData(LOG_UPLOAD_QUEUE)).toEqual([
-      { params: item.params },
-    ]);
-    expect(Queue.getQueueData(NOTIFY_ADMIN_QUEUE)).toEqual([
+    expect(Queue.size(IMAGE_UPLOADED_EVENT)).toBe(1);
+    expect(Queue.getQueueData(IMAGE_UPLOADED_EVENT)).toEqual([
       { params: item.params },
     ]);
   });

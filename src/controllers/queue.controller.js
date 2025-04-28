@@ -14,13 +14,7 @@ export const addTaskToQueue = (req, res, next) => {
     throw new BadRequestError("Task and params are required");
   }
   try {
-    if (task === IMAGE_UPLOADED_EVENT) {
-      Queue.enqueue(GENERATE_THUMBNAILS_QUEUE, { params });
-      Queue.enqueue(LOG_UPLOAD_QUEUE, { params });
-      Queue.enqueue(NOTIFY_ADMIN_QUEUE, { params });
-    } else if (task === LOG_ANALYTICS_EVENT) {
-      Queue.enqueue(LOG_ANALYTICS_EVENT, { params });
-    }
+    Queue.enqueue(task, { params });
     return res.status(200).send("Task added to queue successfully");
   } catch (error) {
     next(error);
