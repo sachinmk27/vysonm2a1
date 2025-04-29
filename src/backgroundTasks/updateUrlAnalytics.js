@@ -2,6 +2,7 @@ import logger from "../logger.js";
 import db from "../drizzle/index.js";
 import { urlTable } from "../drizzle/schema.js";
 import { eq, inArray } from "drizzle-orm";
+import { sub } from "../redis.js";
 
 export const LOG_ANALYTICS_EVENT = "LOG_ANALYTICS_EVENT";
 
@@ -42,3 +43,15 @@ export const updateUrlAnalytics = async (batch) => {
     logger.error("Error updating URL analytics:", error);
   }
 };
+
+async function setup() {
+  if (!sub.isOpen) {
+    await sub.connect();
+  }
+  await sub.subscribe(LOG_ANALYTICS_EVENT, (batch) => {
+    updateUrlAnalytics(JSON.parse(batch));
+  });
+  logger.info("Subscribed to Redis channel for URL analytics updates");
+}
+
+setup();

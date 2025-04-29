@@ -1,4 +1,6 @@
 import logger from "../logger.js";
+import { sub } from "../redis.js";
+import { IMAGE_UPLOADED_EVENT } from "./generateUserThumbnails.js";
 
 export const logUpload = async (batch, workerId) => {
   logger.info("Logging upload...", {
@@ -14,3 +16,15 @@ export const logUpload = async (batch, workerId) => {
 };
 
 export const LOG_UPLOAD_QUEUE = "LOG_UPLOAD_QUEUE";
+
+async function setup() {
+  if (!sub.isOpen) {
+    await sub.connect();
+  }
+  await sub.subscribe(IMAGE_UPLOADED_EVENT, (batch) => {
+    logUpload(JSON.parse(batch));
+  });
+  logger.info("Subscribed to Redis channel for log upload");
+}
+
+setup();

@@ -3,6 +3,7 @@ import sharp from "sharp";
 import db from "../drizzle/index.js";
 import { userTable } from "../drizzle/schema.js";
 import logger from "../logger.js";
+import { sub } from "../redis.js";
 
 export const generateUserThumbnails = async (batch, workerId) => {
   try {
@@ -35,3 +36,15 @@ export const generateUserThumbnails = async (batch, workerId) => {
 
 export const IMAGE_UPLOADED_EVENT = "IMAGE_UPLOADED_EVENT";
 export const GENERATE_THUMBNAILS_QUEUE = "GENERATE_THUMBNAILS_QUEUE";
+
+async function setup() {
+  if (!sub.isOpen) {
+    await sub.connect();
+  }
+  await sub.subscribe(IMAGE_UPLOADED_EVENT, (batch) => {
+    generateUserThumbnails(JSON.parse(batch));
+  });
+  logger.info("Subscribed to Redis channel for generating user thumbnails");
+}
+
+setup();
