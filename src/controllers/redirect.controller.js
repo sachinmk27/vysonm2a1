@@ -10,6 +10,7 @@ import {
   withCircuitBreaker,
 } from "../utils.js";
 import { LOG_ANALYTICS_EVENT } from "../backgroundTasks/updateUrlAnalytics.js";
+import { ps } from "../backgroundTasks/index.js";
 
 export const redirect = async (req, res, next) => {
   try {
@@ -70,7 +71,15 @@ export const redirect = async (req, res, next) => {
     ) {
       throw new NotFoundError("Code has expired");
     }
-    addUrlAnalyticsTaskToQueue({
+    // addUrlAnalyticsTaskToQueue({
+    //   urlId: urlRecord.id,
+    //   lastAccessed: Date.now(),
+    // });
+    // publishUrlAnalyticsEvent({
+    //   urlId: urlRecord.id,
+    //   lastAccessed: Date.now(),
+    // });
+    await publishUrlAnalyticsEventToRedis({
       urlId: urlRecord.id,
       lastAccessed: Date.now(),
     });
@@ -97,4 +106,29 @@ function addUrlAnalyticsTaskToQueue({ urlId, lastAccessed }) {
       },
     }),
   });
+}
+
+function publishUrlAnalyticsEvent({ urlId, lastAccessed }) {
+  ps.publish(LOG_ANALYTICS_EVENT, [
+    {
+      params: {
+        urlId,
+        lastAccessed,
+      },
+    },
+  ]);
+}
+
+async function publishUrlAnalyticsEventToRedis({ urlId, lastAccessed }) {
+  return redisClient.publish(
+    LOG_ANALYTICS_EVENT,
+    JSON.stringify([
+      {
+        params: {
+          urlId,
+          lastAccessed,
+        },
+      },
+    ])
+  );
 }
